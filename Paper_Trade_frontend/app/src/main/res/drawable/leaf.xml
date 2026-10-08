@@ -1,0 +1,89 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+
+    <!-- Leaf shadow -->
+    <path
+        android:fillColor="#55000000"
+        android:translateX="8"
+        android:translateY="10"
+        android:pathData="
+            M127,8
+            C96,48 70,84 48,120
+            C25,157 25,190 51,210
+            C76,230 108,213 127,188
+            C146,213 180,230 205,210
+            C231,190 231,157 208,120
+            C186,84 160,48 127,8 Z" />
+
+    <!-- Main leaf -->
+    <path
+        android:fillColor="#4F8A5B"
+        android:pathData="
+            M127,0
+            C96,40 70,78 48,114
+            C25,151 25,184 51,204
+            C76,224 108,207 127,182
+            C146,207 180,224 205,204
+            C231,184 231,151 208,114
+            C186,78 160,40 127,0 Z" />
+
+    <!-- Dark outer detail -->
+    <path
+        android:fillColor="#315D3C"
+        android:pathData="
+            M127,0
+            C96,40 70,78 48,114
+            C25,151 25,184 51,204
+            C76,224 108,207 127,182
+            C146,207 180,224 205,204
+            C231,184 231,151 208,114
+            C186,78 160,40 127,0 Z
+            M127,18
+            C103,55 82,87 63,119
+            C45,150 46,174 64,187
+            C82,200 104,188 127,159
+            C150,188 174,200 192,187
+            C210,174 211,150 193,119
+            C174,87 151,55 127,18 Z" />
+
+    <!-- Leaf body -->
+    <path
+        android:fillColor="#6FA878"
+        android:pathData="
+            M127,18
+            C103,55 82,87 63,119
+            C45,150 46,174 64,187
+            C82,200 104,188 127,159
+            C150,188 174,200 192,187
+            C210,174 211,150 193,119
+            C174,87 151,55 127,18 Z" />
+
+    <!-- Central vein -->
+    <path
+        android:fillColor="#234A2D"
+        android:pathData="
+            M124,28
+            L124,170
+            L132,170
+            L132,28 Z" />
+
+    <!-- Left veins -->
+    <path
+        android:fillColor="#315D3C"
+        android:pathData="
+            M124,65 L78,92 L82,98 L124,76 Z
+            M124,91 L62,125 L66,132 L124,103 Z
+            M124,118 L56,153 L60,160 L124,130 Z" />
+
+    <!-- Right veins -->
+    <path
+        android:fillColor="#315D3C"
+        android:pathData="
+            M132,65 L176,92 L172,98 L132,76 Z
+            M132,91 L194,125 L190,132 L132,103 Z
+            M132,118 L200,153 L196,160 L132,130 Z" />
+
+</vector>
