@@ -56,7 +56,7 @@ private fun parseUser(json: JSONObject) =
     User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
 
 /** Sends a request to the backend and returns the JSON body, or throws AuthException with the server's message. */
-private suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
+suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
     withContext(Dispatchers.IO) {
         val conn = URL(BASE_URL + path).openConnection() as HttpURLConnection
         try {
@@ -206,23 +206,6 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
                     color = DarkGreen
                 )
             }
-        }
-        BottomStrand()
-    }
-}
-
-/** Temporary screen shown after login, until Stocks / Dashboard exist. */
-@Composable
-fun HomePlaceholder(user: User, onLogout: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(Background)) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Hi, ${user.name}", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = TextGreen)
-            Text("Available balance: $${"%,.2f".format(user.balance)}", fontSize = 17.sp, color = SubtleText)
-            TextButton(onClick = onLogout) { Text("Log out", color = DarkGreen) }
         }
         BottomStrand()
     }

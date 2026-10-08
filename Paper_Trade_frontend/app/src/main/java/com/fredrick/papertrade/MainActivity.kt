@@ -64,7 +64,7 @@ fun PaperTradeApp() {
                 prefs.edit().putString("token", token).apply()
                 user = loggedIn
             })
-            else HomePlaceholder(u, onLogout = {
+            else MainScreen(u, token = prefs.getString("token", "") ?: "", onLogout = {
                 prefs.edit().remove("token").apply()
                 user = null
             })
