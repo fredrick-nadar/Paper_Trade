@@ -51,3 +51,31 @@ The project follows a standard three-layer architecture:
 
 > **Warning:** If the app shows "Can't reach the server" while the backend is running, the phone can't see `localhost`. Re-run `adb reverse tcp:8080 tcp:8080` (it resets when the phone is unplugged or restarted) or use the right `BASE_URL` above.
 
+
+## CleverTap Integration Plan (not yet implemented)
+
+The SDK is not added yet. This is the planned event and profile design.
+
+**Setup:** add the CleverTap Android SDK, set the Account ID and Token in the manifest, and initialise it in an `Application` class. Push needs Firebase (FCM) and the notification permission on Android 13+.
+
+**User profile** (send with `onUserLogin` at signup and login; refresh after each trade):
+`Name`, `Email`, `Identity` (user id), `Balance`, `Portfolio Value`, `Total P&L`, `Number of Holdings`, `Total Trades`, `Signup Date`, `Last Trade Date`, `Favourite Stock`.
+
+**Events**
+
+| Area | Event | Properties |
+|---|---|---|
+| Onboarding | `Onboarding Viewed`, `Onboarding Completed`, `Onboarding Skipped` | `Slide Number` |
+| Auth | `Signed Up`, `Logged In`, `Logged Out`, `Login Failed` | `Reason` |
+| Stocks | `Stocks List Viewed`, `Stock Viewed` | `Symbol`, `Price`, `Change %` |
+| Charts | `Chart Range Changed`, `Chart Type Changed` | `Symbol`, `Range`, `Type` |
+| Trade | `Trade Initiated`, `Trade Completed`, `Trade Failed` | `Symbol`, `Side`, `Quantity`, `Price`, `Total`, `Failure Reason` |
+| Dashboard | `Dashboard Viewed` | `Balance`, `Holdings Count` |
+| Errors | `Server Unreachable` | `Screen` |
+
+* Record `Trade Completed` as a Charged event (`pushChargedEvent`), with the trade total as the amount.
+* Send `Trade Completed` and the balance/P&L properties from the backend (CleverTap server API), since the server sets the final price. Screen views, taps and chart changes come from the app.
+
+**Dashboard ideas:** funnel (Signed Up → Stock Viewed → Trade Initiated → Trade Completed); segments (never traded, frequent traders, low balance, big losses); retention by signup week; push, in-app and email campaigns (e.g. "no trade in 3 days"); App Inbox for trade summaries.
+
+**Suggested first pass:** auth events, `Stock Viewed`, the trade events and the profile properties.

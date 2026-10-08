@@ -167,6 +167,9 @@ fun TradeScreen(
             Text("You own $own ${if (own == 1) "share" else "shares"}", fontSize = 13.sp, color = SubtleText)
         }
 
+        Spacer(Modifier.height(14.dp))
+        ChartCard(stock.symbol, token)
+
         // Buy / Sell toggle
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
