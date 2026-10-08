@@ -1,0 +1,208 @@
+package com.fredrick.papertrade
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+
+private val Background = Color(0xFFCFE8D2)
+private val DarkGreen = Color(0xFF315D3C)
+private val TextGreen = Color(0xFF1F3D2A)
+private val SubtleText = Color(0xFF4A6B55)
+private val ErrorRed = Color(0xFFC62828)
+
+private const val BASE_URL = "http://localhost:8080"
+
+data class User(val id: Long, val name: String, val email: String, val balance: Double)
+
+/** POSTs JSON to the backend. Returns the user, or throws with the server's error message. */
+private suspend fun callAuth(path: String, body: JSONObject): User = withContext(Dispatchers.IO) {
+    val conn = URL(BASE_URL + path).openConnection() as HttpURLConnection
+    try {
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        conn.doOutput = true
+        conn.outputStream.use { it.write(body.toString().toByteArray()) }
+
+        if (conn.responseCode in 200..299) {
+            val json = JSONObject(conn.inputStream.bufferedReader().readText())
+            User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
+        } else {
+            val text = conn.errorStream?.bufferedReader()?.readText().orEmpty()
+            val message = runCatching { JSONObject(text).getString("message") }.getOrNull()
+            throw Exception(if (conn.responseCode == 400) "Please check your details" else message ?: "Something went wrong")
+        }
+    } finally {
+        conn.disconnect()
+    }
+}
+
+@Composable
+fun AuthScreen(onAuthenticated: (User) -> Unit) {
+    var isSignup by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = DarkGreen,
+        unfocusedBorderColor = SubtleText,
+        focusedLabelColor = DarkGreen,
+        unfocusedLabelColor = SubtleText,
+        cursorColor = DarkGreen,
+        focusedTextColor = TextGreen,
+        unfocusedTextColor = TextGreen
+    )
+
+    fun submit() {
+        error = null
+        if (email.isBlank() || password.isBlank() || (isSignup && name.isBlank())) {
+            error = "Please fill in all fields"
+            return
+        }
+        if (isSignup && password.length < 6) {
+            error = "Password must be at least 6 characters"
+            return
+        }
+        loading = true
+        scope.launch {
+            try {
+                val body = JSONObject().put("email", email).put("password", password)
+                if (isSignup) body.put("name", name)
+                onAuthenticated(callAuth(if (isSignup) "/auth/signup" else "/auth/login", body))
+            } catch (e: Exception) {
+                error = if (e is java.io.IOException) "Can't reach the server" else e.message
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize().background(Background)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                if (isSignup) "Create account" else "Welcome back",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextGreen
+            )
+            Text(
+                if (isSignup) "Sign up and get $1,000 virtual money" else "Log in to continue",
+                fontSize = 15.sp,
+                color = SubtleText
+            )
+            Spacer(Modifier.height(24.dp))
+
+            if (isSignup) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("Name") }, singleLine = true,
+                    colors = fieldColors, modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+            OutlinedTextField(
+                value = email, onValueChange = { email = it },
+                label = { Text("Email") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                colors = fieldColors, modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = password, onValueChange = { password = it },
+                label = { Text("Password") }, singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = fieldColors, modifier = Modifier.fillMaxWidth()
+            )
+
+            error?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(it, color = ErrorRed, fontSize = 14.sp)
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = ::submit,
+                enabled = !loading,
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(containerColor = DarkGreen, contentColor = Color.White),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) {
+                Text(if (loading) "Please wait..." else if (isSignup) "Sign up" else "Log in", fontSize = 17.sp)
+            }
+
+            TextButton(onClick = { isSignup = !isSignup; error = null }) {
+                Text(
+                    if (isSignup) "Already have an account? Log in" else "New here? Create an account",
+                    color = DarkGreen
+                )
+            }
+        }
+        BottomStrand()
+    }
+}
+
+/** Temporary screen shown after login, until Stocks / Dashboard exist. */
+@Composable
+fun HomePlaceholder(user: User, onLogout: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(Background)) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Hi, ${user.name}", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = TextGreen)
+            Text("Available balance: $${"%,.2f".format(user.balance)}", fontSize = 17.sp, color = SubtleText)
+            TextButton(onClick = onLogout) { Text("Log out", color = DarkGreen) }
+        }
+        BottomStrand()
+    }
+}

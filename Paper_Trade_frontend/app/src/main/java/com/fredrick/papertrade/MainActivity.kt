@@ -1,27 +1,16 @@
 package com.fredrick.papertrade
 
-import android.content.Context                                  // NEW
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext               // NEW
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,9 +34,13 @@ fun PaperTradeApp() {
         mutableStateOf(prefs.getBoolean("onboarding_done", false))
     }
 
+    var user by remember { mutableStateOf<User?>(null) }
+
     Crossfade(targetState = showLogin, label = "app") { isLogin ->
         if (isLogin) {
-            LoginPlaceholder()
+            val u = user
+            if (u == null) AuthScreen(onAuthenticated = { user = it })
+            else HomePlaceholder(u, onLogout = { user = null })
         } else {
             OnboardingScreen(
                 onFinished = {
@@ -57,35 +50,5 @@ fun PaperTradeApp() {
                 }
             )
         }
-    }
-}
-
-// LoginPlaceholder() stays exactly as it was
-
-@Composable
-fun LoginPlaceholder() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFCFE8D2))
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                "Login / Signup",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F3D2A)
-            )
-            Text(
-                "Placeholder. Authentication comes later.",
-                fontSize = 15.sp,
-                color = Color(0xFF4A6B55)
-            )
-        }
-        BottomStrand()
     }
 }
