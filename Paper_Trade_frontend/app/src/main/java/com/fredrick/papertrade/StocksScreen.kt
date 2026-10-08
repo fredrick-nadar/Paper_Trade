@@ -1,6 +1,7 @@
 package com.fredrick.papertrade
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +52,7 @@ private const val REFRESH_MS = 30_000L   // matches the backend's 30-second cach
 
 data class StockQuote(val symbol: String, val name: String, val logo: String, val price: Double, val change: Double, val changePercent: Double)
 
-private suspend fun fetchStocks(token: String): Pair<List<StockQuote>, Long> {
+suspend fun fetchStocks(token: String): Pair<List<StockQuote>, Long> {
     val json = request("GET", "/stocks", token = token)
     val arr = json.getJSONArray("stocks")
     val list = List(arr.length()) {
@@ -62,7 +63,7 @@ private suspend fun fetchStocks(token: String): Pair<List<StockQuote>, Long> {
 }
 
 @Composable
-fun StocksScreen(user: User, token: String, onLogout: () -> Unit) {
+fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLogout: () -> Unit) {
     var stocks by remember { mutableStateOf<List<StockQuote>?>(null) }
     var updatedAt by remember { mutableStateOf(0L) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -125,7 +126,7 @@ fun StocksScreen(user: User, token: String, onLogout: () -> Unit) {
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
-                    items(list, key = { it.symbol }) { StockRow(it) }
+                    items(list, key = { it.symbol }) { StockRow(it, onClick = { onStockClick(it.symbol) }) }
                 }
             }
         }
@@ -133,7 +134,7 @@ fun StocksScreen(user: User, token: String, onLogout: () -> Unit) {
 }
 
 @Composable
-private fun StockRow(stock: StockQuote) {
+private fun StockRow(stock: StockQuote, onClick: () -> Unit) {
     val color = if (stock.change >= 0) Gain else Loss
     val sign = if (stock.change >= 0) "+" else "-"
 
@@ -142,6 +143,7 @@ private fun StockRow(stock: StockQuote) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.55f))
+            .clickable(onClick = onClick)
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

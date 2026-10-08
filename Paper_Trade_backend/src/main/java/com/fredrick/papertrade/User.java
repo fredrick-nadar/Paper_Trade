@@ -36,4 +36,5 @@ public class User {
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public double getBalance() { return balance; }
+    public void setBalance(double balance) { this.balance = balance; }
 }

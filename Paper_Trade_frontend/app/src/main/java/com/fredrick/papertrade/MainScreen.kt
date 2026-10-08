@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,12 +47,17 @@ private val tabs = listOf("Stocks" to StocksIcon, "Trade" to TradeIcon, "Dashboa
 @Composable
 fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
     var selected by remember { mutableIntStateOf(0) }
+    var current by remember { mutableStateOf(user) }              // keeps the balance up to date after trades
+    var tradeSymbol by remember { mutableStateOf<String?>(null) } // stock tapped on the Stocks tab
 
     Column(Modifier.fillMaxSize().background(Background)) {
         Box(Modifier.weight(1f)) {
             when (selected) {
-                0 -> StocksScreen(user, token, onLogout)
-                1 -> ComingSoon("Trade", "Buy and sell stocks here")
+                0 -> StocksScreen(current, token, onLogout = onLogout, onStockClick = {
+                    tradeSymbol = it
+                    selected = 1
+                })
+                1 -> TradeScreen(current, token, tradeSymbol, onBalanceChange = { current = current.copy(balance = it) }, onLogout = onLogout)
                 else -> ComingSoon("Dashboard", "Holdings and profit/loss will show here")
             }
         }

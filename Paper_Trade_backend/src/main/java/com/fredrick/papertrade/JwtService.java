@@ -3,7 +3,9 @@ package com.fredrick.papertrade;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -35,5 +37,14 @@ public class JwtService {
         String subject = Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token).getPayload().getSubject();
         return Long.valueOf(subject);
+    }
+
+    /** Reads "Bearer <token>" from a request header; throws 401 if missing, invalid or expired. */
+    public Long userIdFromHeader(String header) {
+        try {
+            return readUserId(header.replaceFirst("^Bearer ", ""));
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session expired, please log in again");
+        }
     }
 }
