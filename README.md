@@ -49,3 +49,5 @@ The project follows a standard three-layer architecture:
    * Physical phone over USB: `http://localhost:8080`, plus `adb reverse tcp:8080 tcp:8080` each time the phone is reconnected.
    * Android emulator: `http://10.0.2.2:8080`.
 
+> **Warning:** If the app shows "Can't reach the server" while the backend is running, the phone can't see `localhost`. Re-run `adb reverse tcp:8080 tcp:8080` (it resets when the phone is unplugged or restarted) or use the right `BASE_URL` above.
+
