@@ -50,32 +50,52 @@ private const val BASE_URL = "http://localhost:8080"
 
 data class User(val id: Long, val name: String, val email: String, val balance: Double)
 
-/** POSTs JSON to the backend. Returns the user, or throws with the server's error message. */
-private suspend fun callAuth(path: String, body: JSONObject): User = withContext(Dispatchers.IO) {
-    val conn = URL(BASE_URL + path).openConnection() as HttpURLConnection
-    try {
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.connectTimeout = 5000
-        conn.readTimeout = 5000
-        conn.doOutput = true
-        conn.outputStream.use { it.write(body.toString().toByteArray()) }
+class AuthException(message: String, val code: Int) : Exception(message)
 
-        if (conn.responseCode in 200..299) {
-            val json = JSONObject(conn.inputStream.bufferedReader().readText())
-            User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
-        } else {
-            val text = conn.errorStream?.bufferedReader()?.readText().orEmpty()
-            val message = runCatching { JSONObject(text).getString("message") }.getOrNull()
-            throw Exception(if (conn.responseCode == 400) "Please check your details" else message ?: "Something went wrong")
+private fun parseUser(json: JSONObject) =
+    User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
+
+/** Sends a request to the backend and returns the JSON body, or throws AuthException with the server's message. */
+private suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
+    withContext(Dispatchers.IO) {
+        val conn = URL(BASE_URL + path).openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = method
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            token?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
+            if (body != null) {
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.outputStream.use { it.write(body.toString().toByteArray()) }
+            }
+
+            if (conn.responseCode in 200..299) {
+                JSONObject(conn.inputStream.bufferedReader().readText())
+            } else {
+                val text = conn.errorStream?.bufferedReader()?.readText().orEmpty()
+                val message = runCatching { JSONObject(text).getString("message") }.getOrNull()
+                throw AuthException(
+                    if (conn.responseCode == 400) "Please check your details" else message ?: "Something went wrong",
+                    conn.responseCode
+                )
+            }
+        } finally {
+            conn.disconnect()
         }
-    } finally {
-        conn.disconnect()
     }
+
+/** Login/signup: returns the JWT and the user. */
+private suspend fun callAuth(path: String, body: JSONObject): Pair<String, User> {
+    val json = request("POST", path, body)
+    return json.getString("token") to parseUser(json.getJSONObject("user"))
 }
 
+/** Checks a saved JWT with the backend. Throws AuthException(401) if it is invalid or expired. */
+suspend fun fetchCurrentUser(token: String): User = parseUser(request("GET", "/auth/me", token = token))
+
 @Composable
-fun AuthScreen(onAuthenticated: (User) -> Unit) {
+fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
     var isSignup by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -109,7 +129,8 @@ fun AuthScreen(onAuthenticated: (User) -> Unit) {
             try {
                 val body = JSONObject().put("email", email).put("password", password)
                 if (isSignup) body.put("name", name)
-                onAuthenticated(callAuth(if (isSignup) "/auth/signup" else "/auth/login", body))
+                val (token, user) = callAuth(if (isSignup) "/auth/signup" else "/auth/login", body)
+                onAuthenticated(token, user)
             } catch (e: Exception) {
                 error = if (e is java.io.IOException) "Can't reach the server" else e.message
             } finally {
