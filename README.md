@@ -30,21 +30,22 @@ The project follows a standard three-layer architecture:
 
 ### Database & Backend
 
-1. Start the PostgreSQL database using Docker:
+1. Create your local secrets file (it is gitignored, never commit it):
    ```bash
-   docker run --name paper-trade-db \
-     -e POSTGRES_DB=paper_trade \
-     -e POSTGRES_USER=papertrade \
-     -e POSTGRES_PASSWORD=papertrade \
-     -p 5432:5432 \
-     -v paper-trade-data:/var/lib/postgresql \
-     -d postgres:18
+   cp Paper_Trade_backend/.env.example Paper_Trade_backend/.env
    ```
-2. Open the `Paper_Trade_backend` project in your IDE (e.g., IntelliJ IDEA) and run the Spring Boot application. It runs on `http://localhost:8080`.
+   Fill in `DB_PASSWORD`, `JWT_SECRET` (32+ random chars) and `FINNHUB_KEY` (free key from https://finnhub.io).
+2. Start PostgreSQL with Docker Compose from the repo root:
+   ```bash
+   docker compose --env-file Paper_Trade_backend/.env up -d
+   ```
+3. Run the Spring Boot application from `Paper_Trade_backend` (the working directory must be that folder so `.env` is found). It runs on `http://localhost:8080`.
 
 ### Frontend
 
 1. Open the `Paper_Trade_frontend` project in Android Studio.
 2. Build and run the application on an Android Emulator.
-3. Note: The Android emulator communicates with the local Mac backend via `http://10.0.2.2:8080`.
+3. The backend URL is `BASE_URL` in `AuthScreen.kt`:
+   * Physical phone over USB: `http://localhost:8080`, plus `adb reverse tcp:8080 tcp:8080` each time the phone is reconnected.
+   * Android emulator: `http://10.0.2.2:8080`.
 

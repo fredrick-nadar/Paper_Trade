@@ -147,23 +147,7 @@ private fun StockRow(stock: StockQuote, onClick: () -> Unit) {
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Company logo from Finnhub (transparent, sits on the card); initials in a green circle if it is missing or fails to load
-        val initials: @Composable () -> Unit = {
-            Box(Modifier.fillMaxSize().background(DarkGreen), contentAlignment = Alignment.Center) {
-                Text(stock.symbol.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
-        }
-        var logoFailed by remember { mutableStateOf(false) }
-        Box(Modifier.size(42.dp)) {
-            if (stock.logo.isBlank() || logoFailed) Box(Modifier.fillMaxSize().clip(CircleShape)) { initials() }
-            else AsyncImage(
-                model = stock.logo,
-                contentDescription = stock.name,
-                contentScale = ContentScale.Crop,
-                onError = { logoFailed = true },
-                modifier = Modifier.fillMaxSize().clip(CircleShape)
-            )
-        }
+        CompanyLogo(stock.symbol, stock.name, stock.logo)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(stock.symbol, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextGreen)
@@ -174,6 +158,27 @@ private fun StockRow(stock: StockQuote, onClick: () -> Unit) {
             Text(
                 "$sign${"%.2f".format(kotlin.math.abs(stock.change))} ($sign${"%.2f".format(kotlin.math.abs(stock.changePercent))}%)",
                 fontSize = 13.sp, color = color
+            )
+        }
+    }
+}
+
+/** Round company logo from Finnhub; green initials circle if it is missing or fails to load. */
+@Composable
+fun CompanyLogo(symbol: String, name: String, logo: String) {
+    var failed by remember { mutableStateOf(false) }
+    Box(Modifier.size(42.dp).clip(CircleShape)) {
+        if (logo.isBlank() || failed) {
+            Box(Modifier.fillMaxSize().background(DarkGreen), contentAlignment = Alignment.Center) {
+                Text(symbol.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+        } else {
+            AsyncImage(
+                model = logo,
+                contentDescription = name,
+                contentScale = ContentScale.Crop,
+                onError = { failed = true },
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

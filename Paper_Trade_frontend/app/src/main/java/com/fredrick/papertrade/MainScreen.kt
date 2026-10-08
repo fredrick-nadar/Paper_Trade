@@ -1,7 +1,6 @@
 package com.fredrick.papertrade
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,20 +15,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.SolidColor
 
 private val Background = Color(0xFFCFE8D2)
 private val DarkGreen = Color(0xFF315D3C)
-private val TextGreen = Color(0xFF1F3D2A)
-private val SubtleText = Color(0xFF4A6B55)
 
 // Simple 24x24 icons, drawn from SVG path data (avoids pulling in the big icons library)
 private fun icon(name: String, path: String): ImageVector =
@@ -58,7 +53,7 @@ fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
                     selected = 1
                 })
                 1 -> TradeScreen(current, token, tradeSymbol, onBalanceChange = { current = current.copy(balance = it) }, onLogout = onLogout)
-                else -> ComingSoon("Dashboard", "Holdings and profit/loss will show here")
+                else -> DashboardScreen(token, onLogout)
             }
         }
 
@@ -79,17 +74,5 @@ fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ComingSoon(title: String, subtitle: String) {
-    Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = TextGreen)
-        Text(subtitle, fontSize = 15.sp, color = SubtleText)
     }
 }

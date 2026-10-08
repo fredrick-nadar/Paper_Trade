@@ -1,0 +1,17 @@
+# Local PostgreSQL for development. Run from the repo root:
+#   docker compose --env-file Paper_Trade_backend/.env up -d
+services:
+  db:
+    image: postgres:18
+    container_name: paper-trade-db
+    environment:
+      POSTGRES_DB: paper_trade
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - paper-trade-data:/var/lib/postgresql
+
+volumes:
+  paper-trade-data:
