@@ -42,6 +42,7 @@ public class AuthController {
         User user = users.findByEmail(req.email().trim().toLowerCase())
                 .filter(u -> encoder.matches(req.password(), u.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+
         return toAuth(user);
     }
 

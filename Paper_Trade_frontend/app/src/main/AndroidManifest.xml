@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:allowBackup="true"
@@ -13,7 +15,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.Paper_Trade_frontend">
+        android:theme="@style/Theme.Paper_Trade_frontend"
+        android:name="com.clevertap.android.sdk.Application">
+
+        <meta-data
+            android:name="CLEVERTAP_ACCOUNT_ID"
+            android:value="487-878-Z97Z"/>
+        <meta-data
+            android:name="CLEVERTAP_TOKEN"
+            android:value="bab-ab4"/>
+
+        <meta-data
+            android:name="CLEVERTAP_NOTIFICATION_ICON"
+            android:value="ic_launcher_foreground"/>
+
+        <meta-data
+            android:name="CLEVERTAP_BACKGROUND_SYNC"
+            android:value="1"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -26,6 +45,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".MyFcmMessageListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.clevertap.android.sdk.pushnotification.CTPushNotificationReceiver"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 
 </manifest>
