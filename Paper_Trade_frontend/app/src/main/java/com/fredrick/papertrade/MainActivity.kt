@@ -3,6 +3,7 @@ package com.fredrick.papertrade
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.util.Log
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,11 +29,14 @@ import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : ComponentActivity(), CTPushNotificationListener {
 
+    private val notificationTag = "PaperTradePush"
     var cleverTapDefaultInstance: CleverTapAPI? = null
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // App startup initializes CleverTap/Firebase before Compose starts the login flow.
         super.onCreate(savedInstanceState)
+        handlePushIntent(intent)
         cleverTapDefaultInstance = CleverTapAPI.getDefaultInstance(applicationContext)?.apply {
             ctPushNotificationListener = this@MainActivity
         }
@@ -45,15 +49,39 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handlePushIntent(intent)
+    }
+
+    private fun handlePushIntent(intent: android.content.Intent?) {
+        // Fallback notifications carry the CleverTap bundle here so clicks are attributed to the campaign.
+        val pushExtras = intent?.extras ?: return
+        if (pushExtras.containsKey("wzrk_pn") ||
+            pushExtras.containsKey("wzrk_id")
+        ) {
+            CleverTapAPI.getDefaultInstance(applicationContext)
+                ?.pushNotificationClickedEvent(pushExtras)
+            Log.d("PaperTradePush", "CleverTap click event recorded")
+        }
+    }
+
     private fun registerFcmToken() {
+        // CleverTap targets this device using the FCM token, not the user's email address alone.
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                cleverTapDefaultInstance?.pushFcmRegistrationId(task.result, true)
+                val token = task.result
+                Log.d(notificationTag, "FCM token received")
+                cleverTapDefaultInstance?.pushFcmRegistrationId(token, true)
+            } else {
+                Log.e(notificationTag, "Unable to retrieve FCM token", task.exception)
             }
         }
     }
 
     private fun requestNotificationPermission() {
+        // Android 13+ requires explicit permission before any push can be displayed.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -62,6 +90,7 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
     }
 
     private fun pushUserToAnalyticsAndCleverTap(user: User) {
+        // Login links the backend user to the CleverTap profile and identifies the same user in Analytics.
         val profileUpdate = hashMapOf<String, Any>(
             "Identity" to user.id.toString(),
             "Name" to user.name,
@@ -69,6 +98,7 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
             "Account Balance" to user.balance
         )
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
+        registerFcmToken()
 
         firebaseAnalytics.setUserId(user.id.toString())
 
@@ -80,10 +110,11 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
     }
 
     override fun onNotificationClickedPayloadReceived(payload: HashMap<String, Any>) {
-
+        // Clicks from the custom fallback notification are handled through the Activity intent above.
     }
 }
 
+/** Owns onboarding/session state and chooses between onboarding, auth, and the logged-in shell. */
 @Composable
 fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
     val context = LocalContext.current
@@ -103,6 +134,7 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
 
     // If a JWT was saved earlier, check it with the backend before showing the login screen
     var checkingSession by remember { mutableStateOf(prefs.getString("token", null) != null) }
+    // A saved JWT is checked against /auth/me before the login screen is shown.
     LaunchedEffect(Unit) {
         val saved = prefs.getString("token", null) ?: return@LaunchedEffect
         try {

@@ -58,6 +58,7 @@ data class PriceHistory(val firstTradeDate: Long, val available: List<String>, v
 
 /** GET /stocks/{symbol}/history. `available` only lists ranges the stock has enough history for. */
 suspend fun fetchHistory(token: String, symbol: String, range: String): PriceHistory {
+    // Maps backend Yahoo/Finnhub-normalized candles into the chart model.
     val json = request("GET", "/stocks/$symbol/history?range=$range", token = token)
     val arr = json.getJSONArray("candles")
     val av = json.getJSONArray("available")
@@ -74,6 +75,7 @@ suspend fun fetchHistory(token: String, symbol: String, range: String): PriceHis
 /** Price history for one stock: line or candlestick, with a range picker that adapts to the stock's age. */
 @Composable
 fun ChartCard(symbol: String, token: String, modifier: Modifier = Modifier) {
+    // Fetches history when the symbol/range changes and lets the user inspect line or candle views.
     var range by remember(symbol) { mutableStateOf("1M") }
     var candleMode by remember { mutableStateOf(false) }
     var history by remember(symbol) { mutableStateOf<PriceHistory?>(null) }

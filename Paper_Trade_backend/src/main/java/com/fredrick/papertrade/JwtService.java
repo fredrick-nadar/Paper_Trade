@@ -18,10 +18,12 @@ public class JwtService {
     private final long expiryMillis;
 
     public JwtService(@Value("${jwt.secret}") String secret, @Value("${jwt.expiry-hours}") long hours) {
+        // The environment-backed secret signs and verifies every session token.
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiryMillis = hours * 60 * 60 * 1000;
     }
 
+    // Creates the bearer token returned after successful signup or login.
     public String createToken(Long userId) {
         Date now = new Date();
         return Jwts.builder()

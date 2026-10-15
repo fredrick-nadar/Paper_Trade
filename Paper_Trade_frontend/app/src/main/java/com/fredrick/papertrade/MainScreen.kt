@@ -41,6 +41,7 @@ private val tabs = listOf("Stocks" to StocksIcon, "Trade" to TradeIcon, "Dashboa
 /** Logged-in app shell: the current tab's screen on top, bottom navigation bar below. */
 @Composable
 fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
+    // Tab state stays local to the logged-in shell; the token is passed to each API-backed screen.
     var selected by remember { mutableIntStateOf(0) }
     var current by remember { mutableStateOf(user) }              // keeps the balance up to date after trades
     var tradeSymbol by remember { mutableStateOf<String?>(null) } // stock tapped on the Stocks tab

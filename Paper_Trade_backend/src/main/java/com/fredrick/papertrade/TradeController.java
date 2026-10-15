@@ -14,6 +14,7 @@ import java.util.List;
 @RestController
 public class TradeController {
 
+    // The request is validated before any database work: symbols, side, and quantity are constrained.
     record TradeRequest(@Pattern(regexp = "[A-Z]{1,5}") String symbol,
                         @Pattern(regexp = "BUY|SELL") String type,
                         @Min(1) @Max(10000) int quantity) {}
@@ -36,7 +37,7 @@ public class TradeController {
         this.trades = trades;
     }
 
-    // Buy or sell at the LIVE price. The price always comes from the market-data API on the
+    // Buys or sells at the LIVE price. The price always comes from the market-data API on the
     // server, never from the app. @Transactional = balance, holding and trade all save together or not at all.
     @PostMapping("/trades")
     @Transactional
@@ -74,6 +75,7 @@ public class TradeController {
         return new TradeResponse(req.symbol(), req.type(), req.quantity(), price, total, user.getBalance());
     }
 
+    // Returns the user's balance and sorted holdings for the trade screen.
     @GetMapping("/holdings")
     public HoldingsResponse holdings(@RequestHeader(value = "Authorization", defaultValue = "") String header) {
         Long userId = jwt.userIdFromHeader(header);
@@ -89,6 +91,7 @@ public class TradeController {
         return new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, message);   // 422: valid request, rule not met
     }
 
+    // All currency arithmetic is rounded at the API boundary.
     private static double round(double v) {
         return Math.round(v * 100.0) / 100.0;
     }

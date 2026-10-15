@@ -33,6 +33,7 @@ fun PageIndicator(
     fill: Float,
     modifier: Modifier = Modifier
 ) {
+    // The active onboarding page is a growing pill whose fill represents elapsed time.
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

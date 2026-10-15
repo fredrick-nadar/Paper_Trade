@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/auth")
 public class AuthController {
 
+    // These records define the JSON shapes accepted by and returned from the authentication API.
     record SignupRequest(@NotBlank String name, @Email @NotBlank String email, @Size(min = 6) String password) {}
     record LoginRequest(@NotBlank String email, @NotBlank String password) {}
     record UserResponse(Long id, String name, String email, double balance) {}
@@ -27,6 +28,7 @@ public class AuthController {
         this.jwt = jwt;
     }
 
+    // Creates a local Paper Trade account, hashes the password, and returns a JWT session.
     @PostMapping("/signup")
     public AuthResponse signup(@Valid @RequestBody SignupRequest req) {
         String email = req.email().trim().toLowerCase();
@@ -37,6 +39,7 @@ public class AuthController {
         return toAuth(user);
     }
 
+    // Verifies the submitted credentials and returns a new JWT session for the user.
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest req) {
         User user = users.findByEmail(req.email().trim().toLowerCase())
@@ -46,7 +49,7 @@ public class AuthController {
         return toAuth(user);
     }
 
-    // Used by the app on startup to check a saved token and fetch the current user
+    // Used by the app on startup to validate its saved token and restore the current user.
     @GetMapping("/me")
     public UserResponse me(@RequestHeader(value = "Authorization", defaultValue = "") String header) {
         try {
@@ -57,10 +60,12 @@ public class AuthController {
         }
     }
 
+    // Keeps the JWT and public user fields consistent for signup and login responses.
     private AuthResponse toAuth(User u) {
         return new AuthResponse(jwt.createToken(u.getId()), toResponse(u));
     }
 
+    // Deliberately excludes the password hash from every response sent to the Android app.
     private UserResponse toResponse(User u) {
         return new UserResponse(u.getId(), u.getName(), u.getEmail(), u.getBalance());
     }

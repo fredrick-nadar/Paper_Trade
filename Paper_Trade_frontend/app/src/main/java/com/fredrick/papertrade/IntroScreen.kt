@@ -30,6 +30,7 @@ import kotlin.math.sin
 
 @Composable
 fun IntroScreen() {
+    // Decorative opening scene; it has no authentication or trading side effects.
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
 
@@ -99,6 +100,7 @@ fun BoxScope.FallingLeaf(
 
 @Composable
 fun BottomStrand() {
+    // Shared decorative curve used below onboarding/auth content.
     Canvas(Modifier.fillMaxSize()) {
         val path = Path()
         path.moveTo(0f, size.height - 90f)

@@ -40,6 +40,7 @@ fun Paper_Trade_frontendTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    // Uses Android dynamic colors when available, otherwise falls back to the bundled Material palette.
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

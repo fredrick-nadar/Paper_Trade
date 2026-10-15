@@ -50,6 +50,7 @@ private data class Portfolio(
 )
 
 private suspend fun fetchPortfolio(token: String): Portfolio {
+    // Maps GET /portfolio into a UI model containing summary values and holding rows.
     val j = request("GET", "/portfolio", token = token)
     val arr = j.getJSONArray("holdings")
     val holdings = List(arr.length()) {
@@ -68,6 +69,7 @@ private fun signedPct(v: Double) = (if (v >= 0) "+" else "-") + "%.2f".format(ab
 
 @Composable
 fun DashboardScreen(token: String, onLogout: () -> Unit) {
+    // The dashboard refreshes independently so live prices and P/L remain current.
     var portfolio by remember { mutableStateOf<Portfolio?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 

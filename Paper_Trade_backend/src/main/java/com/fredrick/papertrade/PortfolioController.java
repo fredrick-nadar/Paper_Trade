@@ -28,7 +28,7 @@ public class PortfolioController {
         this.holdings = holdings;
     }
 
-    // Dashboard numbers: cash, amount invested (cost), current value at live prices, and profit/loss
+    // Dashboard numbers: cash, invested cost, live value, profit/loss, and position details.
     @GetMapping("/portfolio")
     public Portfolio portfolio(@RequestHeader(value = "Authorization", defaultValue = "") String header) {
         Long userId = jwt.userIdFromHeader(header);
@@ -54,10 +54,12 @@ public class PortfolioController {
         return new Portfolio(r(cash), r(invested), r(value), r(value - invested), pct(value - invested, invested), positions);
     }
 
+    // Rounds money values at the API boundary so the UI receives stable currency values.
     private static double r(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
 
+    // Calculates a percentage without dividing by zero for an empty portfolio.
     private static double pct(double part, double whole) {
         return whole == 0 ? 0 : r(part / whole * 100);
     }

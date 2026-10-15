@@ -31,6 +31,7 @@ private const val TOTAL_DOTS = 7        // Screens 2-8 only; the leaf screen has
 
 @Composable
 fun OnboardingScreen(onFinished: () -> Unit) {
+    // Timed onboarding advances through educational screens and ends by enabling authentication.
 
     var currentScreen by remember { mutableIntStateOf(0) }
 

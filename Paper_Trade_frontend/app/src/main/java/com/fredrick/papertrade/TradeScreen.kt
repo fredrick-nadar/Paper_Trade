@@ -54,6 +54,7 @@ private fun money(v: Double) = "$${"%,.2f".format(v)}"
 
 /** Shares owned per symbol, from GET /holdings. */
 private suspend fun fetchOwned(token: String): Map<String, Int> {
+    // Loads quantities used for the sell-side UI hint; the server remains authoritative.
     val arr = request("GET", "/holdings", token = token).getJSONArray("holdings")
     return (0 until arr.length()).associate { arr.getJSONObject(it).let { h -> h.getString("symbol") to h.getInt("quantity") } }
 }
@@ -66,6 +67,7 @@ fun TradeScreen(
     onBalanceChange: (Double) -> Unit,
     onLogout: () -> Unit
 ) {
+    // Trade state is local to this screen; successful orders update balance and owned quantities.
     var stocks by remember { mutableStateOf<List<StockQuote>?>(null) }
     var owned by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var symbol by remember { mutableStateOf(initialSymbol) }
@@ -93,6 +95,7 @@ fun TradeScreen(
     }
 
     fun placeOrder(stock: StockQuote) {
+        // The app sends intent only; the backend fetches the authoritative live price and commits the trade.
         busy = true
         message = null
         scope.launch {

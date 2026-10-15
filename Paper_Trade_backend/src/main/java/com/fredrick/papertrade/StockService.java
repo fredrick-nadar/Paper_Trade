@@ -15,13 +15,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class StockService {
 
+    // These records are the market-data contracts consumed by the Android screens.
     public record Stock(String symbol, String name, String logo, double price, double change, double changePercent) {}
     public record Profile(String name, String logo) {}
     public record StocksResponse(List<Stock> stocks, long updatedAt) {}
     public record Candle(long t, double o, double h, double l, double c) {}
     public record History(String symbol, String range, long firstTradeDate, List<String> available, List<Candle> candles) {}
 
-    // Chart ranges: days of history and the candle size used for each (keeps ~20-250 candles per chart)
+    // Chart ranges: lookback duration and candle interval used for each range.
     private record Range(int days, String interval) {}
     private static final Map<String, Range> RANGES = new LinkedHashMap<>();
     static {
@@ -38,7 +39,7 @@ public class StockService {
     private record CachedHistory(History history, long at) {}
     private final Map<String, CachedHistory> historyCache = new ConcurrentHashMap<>();
 
-    // Fixed watch list for the demo
+    // Fixed watch list for this demo; symbols are the only tradable universe.
     private static final List<String> SYMBOLS =
             List.of("AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL", "META", "NFLX", "AMD", "DIS");
 
@@ -54,12 +55,12 @@ public class StockService {
         this.apiKey = apiKey;
     }
 
-    /** All watch-list stocks, cached for 30 seconds. */
+    /** Returns watch-list quotes; the result is cached for 30 seconds. */
     public StocksResponse stocks() {
         return load();
     }
 
-    /** One fresh (uncached) quote, used to price a trade. Null if unavailable. */
+    /** Fetches one uncached quote so the server, not the app, determines trade pricing. */
     public Stock quote(String symbol) {
         return SYMBOLS.contains(symbol) ? fetch(symbol) : null;
     }
@@ -120,7 +121,7 @@ public class StockService {
         return new History(symbol, range, first * 1000, available, candles);
     }
 
-    // Reuse the last result for 30 seconds so we don't hammer the market-data API
+    // Reuse the last result for 30 seconds so normal screen refreshes do not hammer Finnhub.
     private synchronized StocksResponse load() {
         if (cache == null || System.currentTimeMillis() - cache.updatedAt() > CACHE_MS) {
             List<Stock> list = SYMBOLS.parallelStream()
@@ -135,7 +136,7 @@ public class StockService {
         return cache;
     }
 
-    // Finnhub /quote: c = current price, d = change, dp = change percent
+    // Maps Finnhub's quote fields: c=current, d=change, dp=change percent.
     private Stock fetch(String symbol) {
         try {
             Map<String, Object> q = get("/quote?symbol=" + symbol);
@@ -149,7 +150,7 @@ public class StockService {
         }
     }
 
-    // Finnhub /stock/profile2: company name and logo URL
+    // Fetches display metadata separately because it changes less often than prices.
     private Profile fetchProfile(String symbol) {
         Map<String, Object> p = get("/stock/profile2?symbol=" + symbol);
         return new Profile(String.valueOf(p.getOrDefault("name", symbol)), String.valueOf(p.getOrDefault("logo", "")));
@@ -162,6 +163,7 @@ public class StockService {
                 .retrieve().body(Map.class);
     }
 
+    // Keeps prices consistent between the backend response and the Compose UI.
     private static double round(double v) {
         return Math.round(v * 100.0) / 100.0;
     }

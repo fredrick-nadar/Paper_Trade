@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.max
 import kotlin.math.min
 
+// Educational illustrations used by onboarding. These screens use local demo data and do not call the backend.
 // ---------- Shared colours ----------
 private val DarkGreen = Color(0xFF315D3C)
 private val TextGreen = Color(0xFF1F3D2A)
@@ -86,6 +87,7 @@ fun ScreenLayout(
     highlight: String? = null,
     illustration: @Composable () -> Unit = {}
 ) {
+    // Centralizes typography, spacing, and the entrance animation for onboarding scenes.
     // Build a title where only the highlighted part is styled differently
     val styledTitle = buildAnnotatedString {
         val start = if (highlight != null) title.indexOf(highlight) else -1

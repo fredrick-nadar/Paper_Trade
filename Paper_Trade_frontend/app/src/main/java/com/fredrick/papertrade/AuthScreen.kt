@@ -50,8 +50,10 @@ private const val BASE_URL = "http://localhost:8080"
 
 data class User(val id: Long, val name: String, val email: String, val balance: Double)
 
+// Separates HTTP/authentication failures from network and parsing failures so the UI can react appropriately.
 class AuthException(message: String, val code: Int) : Exception(message)
 
+// Converts the backend's public user JSON into the model used by Compose screens.
 private fun parseUser(json: JSONObject) =
     User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
 
@@ -94,6 +96,7 @@ private suspend fun callAuth(path: String, body: JSONObject): Pair<String, User>
 /** Checks a saved JWT with the backend. Throws AuthException(401) if it is invalid or expired. */
 suspend fun fetchCurrentUser(token: String): User = parseUser(request("GET", "/auth/me", token = token))
 
+/** Displays signup/login fields and returns the authenticated user to MainActivity. */
 @Composable
 fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
     var isSignup by remember { mutableStateOf(false) }
@@ -115,6 +118,7 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
     )
 
     fun submit() {
+        // Validation is immediate for user feedback; the backend validates the same request again.
         error = null
         if (email.isBlank() || password.isBlank() || (isSignup && name.isBlank())) {
             error = "Please fill in all fields"

@@ -2,7 +2,7 @@ package com.fredrick.papertrade;
 
 import jakarta.persistence.*;
 
-// @Entity = this class becomes the "users" table in PostgreSQL
+// @Entity maps this class to the "users" table in PostgreSQL.
 @Entity
 @Table(name = "users")
 public class User {
@@ -23,8 +23,10 @@ public class User {
     @Column(nullable = false)
     private double balance = 1000.0;
 
+    // Required by JPA when loading an existing user.
     protected User() {}
 
+    // New accounts start with the virtual balance declared above.
     public User(String name, String email, String passwordHash) {
         this.name = name;
         this.email = email;

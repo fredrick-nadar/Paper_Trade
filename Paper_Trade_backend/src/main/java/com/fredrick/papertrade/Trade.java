@@ -3,7 +3,7 @@ package com.fredrick.papertrade;
 import jakarta.persistence.*;
 import java.time.Instant;
 
-// History: one row per buy or sell
+// Immutable trade history: one row is written for every accepted buy or sell.
 @Entity
 @Table(name = "trades")
 public class Trade {
@@ -22,8 +22,10 @@ public class Trade {
     private double total;      // price * quantity
     private Instant createdAt = Instant.now();
 
+    // Required by JPA for database reads.
     protected Trade() {}
 
+    // Creates the audit record after the user's balance and holding have been updated.
     public Trade(Long userId, String symbol, String type, int quantity, double price, double total) {
         this.userId = userId;
         this.symbol = symbol;

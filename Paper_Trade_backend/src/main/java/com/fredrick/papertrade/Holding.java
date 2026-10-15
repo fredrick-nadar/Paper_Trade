@@ -2,7 +2,7 @@ package com.fredrick.papertrade;
 
 import jakarta.persistence.*;
 
-// One row per (user, stock): how many shares the user owns and the average price paid
+// One row per (user, stock): owned quantity and the average price paid for that position.
 @Entity
 @Table(name = "holdings", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "symbol"}))
 public class Holding {
@@ -20,8 +20,10 @@ public class Holding {
     private int quantity;
     private double avgPrice;
 
+    // Required by JPA when it reconstructs a Holding from PostgreSQL.
     protected Holding() {}
 
+    // New holdings are created when a user buys a symbol for the first time.
     public Holding(Long userId, String symbol) {
         this.userId = userId;
         this.symbol = symbol;

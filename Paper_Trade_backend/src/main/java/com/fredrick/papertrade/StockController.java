@@ -19,12 +19,14 @@ public class StockController {
         this.stocks = stocks;
     }
 
+    // Returns the cached watch list only to authenticated app sessions.
     @GetMapping("/stocks")
     public StockService.StocksResponse stocks(@RequestHeader(value = "Authorization", defaultValue = "") String header) {
         jwt.userIdFromHeader(header);
         return stocks.stocks();
     }
 
+    // Returns chart candles after validating the session, symbol, and requested range.
     @GetMapping("/stocks/{symbol}/history")
     public StockService.History history(@RequestHeader(value = "Authorization", defaultValue = "") String header,
                                         @PathVariable String symbol,

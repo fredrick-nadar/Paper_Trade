@@ -53,6 +53,7 @@ private const val REFRESH_MS = 30_000L   // matches the backend's 30-second cach
 data class StockQuote(val symbol: String, val name: String, val logo: String, val price: Double, val change: Double, val changePercent: Double)
 
 suspend fun fetchStocks(token: String): Pair<List<StockQuote>, Long> {
+    // Maps GET /stocks into quote rows and the backend's cache timestamp.
     val json = request("GET", "/stocks", token = token)
     val arr = json.getJSONArray("stocks")
     val list = List(arr.length()) {
@@ -64,6 +65,7 @@ suspend fun fetchStocks(token: String): Pair<List<StockQuote>, Long> {
 
 @Composable
 fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLogout: () -> Unit) {
+    // The watch list refreshes on the same 30-second cadence as the backend cache.
     var stocks by remember { mutableStateOf<List<StockQuote>?>(null) }
     var updatedAt by remember { mutableStateOf(0L) }
     var error by remember { mutableStateOf<String?>(null) }
