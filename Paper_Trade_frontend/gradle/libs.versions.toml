@@ -11,6 +11,9 @@ composeBom = "2026.02.01"
 animationCore = "1.12.1"
 uiGraphics = "1.12.1"
 googleServices = "4.4.4"
+firebaseBom = "33.9.0"
+clevertap = "7.1.0"
+coil = "2.7.0"
 
 
 [libraries]
@@ -30,6 +33,11 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+clevertap-android-sdk = { group = "com.clevertap.android", name = "clevertap-android-sdk", version.ref = "clevertap" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
