@@ -45,6 +45,8 @@ private val DarkGreen = Color(0xFF315D3C)
 private val TextGreen = Color(0xFF1F3D2A)
 private val SubtleText = Color(0xFF4A6B55)
 private val ErrorRed = Color(0xFFC62828)
+private const val BACKEND_CONNECT_TIMEOUT_MILLIS = 30_000
+private const val BACKEND_READ_TIMEOUT_MILLIS = 30_000
 
 data class User(val id: Long, val name: String, val email: String, val balance: Double)
 
@@ -61,8 +63,9 @@ suspend fun request(method: String, path: String, body: JSONObject? = null, toke
         val conn = URL(BuildConfig.BACKEND_URL + path).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
-            conn.connectTimeout = 5000
-            conn.readTimeout = 5000
+            // Render free services can take time to wake after being idle.
+            conn.connectTimeout = BACKEND_CONNECT_TIMEOUT_MILLIS
+            conn.readTimeout = BACKEND_READ_TIMEOUT_MILLIS
             token?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
             if (body != null) {
                 conn.setRequestProperty("Content-Type", "application/json")
