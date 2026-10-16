@@ -35,4 +35,3 @@ androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", ve
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-
