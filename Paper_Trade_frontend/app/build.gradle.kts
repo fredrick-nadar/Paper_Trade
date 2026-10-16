@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -17,48 +18,40 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner =
+            "androidx.test.runner.AndroidJUnitRunner"
+
+        val backendUrl = providers.gradleProperty("BACKEND_URL")
+            .orElse("https://paper-trade-mmhw.onrender.com")
+            .get()
+
+        buildConfigField(
+            "String",
+            "BACKEND_URL",
+            "\"${backendUrl.trimEnd('/')}/\""
+        )
     }
 
     buildTypes {
         release {
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                packageScope = setOf(
+                    "androidx.**",
+                    "kotlin.**",
+                    "kotlinx.**"
+                )
             }
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
-}
-
-dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.compose.animation.core)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.core.ktx)
-    implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.ui.graphics)
-    testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation("androidx.core:core:1.13.0")
-    implementation("com.clevertap.android:clevertap-android-sdk:8.1.0")
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-analytics")
 }

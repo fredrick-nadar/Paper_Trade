@@ -46,8 +46,6 @@ private val TextGreen = Color(0xFF1F3D2A)
 private val SubtleText = Color(0xFF4A6B55)
 private val ErrorRed = Color(0xFFC62828)
 
-private const val BASE_URL = "http://localhost:8080"
-
 data class User(val id: Long, val name: String, val email: String, val balance: Double)
 
 // Separates HTTP/authentication failures from network and parsing failures so the UI can react appropriately.
@@ -60,7 +58,7 @@ private fun parseUser(json: JSONObject) =
 /** Sends a request to the backend and returns the JSON body, or throws AuthException with the server's message. */
 suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
     withContext(Dispatchers.IO) {
-        val conn = URL(BASE_URL + path).openConnection() as HttpURLConnection
+        val conn = URL(BuildConfig.BACKEND_URL + path).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
             conn.connectTimeout = 5000
