@@ -4,6 +4,7 @@ import android.content.Context
 import com.clevertap.android.sdk.CleverTapAPI
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.UUID
 import java.util.Locale
 
 /** CleverTap event and profile helpers. Every call is a no-op if the SDK is unavailable. */
@@ -41,6 +42,23 @@ object Analytics {
             )
         )
         ct(context)?.apply {
+            // Charged event for money movement. Payment mode marks it as virtual so reports can filter it out.
+            pushChargedEvent(
+                hashMapOf<String, Any>(
+                    "Amount" to total,
+                    "Payment mode" to "Virtual Balance",
+                    "Charged ID" to UUID.randomUUID().toString(),
+                    "Side" to if (isBuy) "BUY" else "SELL"
+                ),
+                arrayListOf(
+                    hashMapOf<String, Any>(
+                        "Product Name" to symbol,
+                        "Category" to if (isBuy) "Stock Buy" else "Stock Sell",
+                        "Quantity" to quantity,
+                        "Price" to price
+                    )
+                )
+            )
             incrementValue("Total Trades", 1)
             pushProfile(
                 mapOf(
