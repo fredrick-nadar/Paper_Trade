@@ -16,7 +16,7 @@ public class AuthController {
     // These records define the JSON shapes accepted by and returned from the authentication API.
     record SignupRequest(@NotBlank String name, @Email @NotBlank String email, @Size(min = 6) String password) {}
     record LoginRequest(@NotBlank String email, @NotBlank String password) {}
-    record UserResponse(Long id, String name, String email, double balance) {}
+    record UserResponse(Long id, String publicId, String name, String email, double balance) {}
     record AuthResponse(String token, UserResponse user) {}
 
     private final UserRepository users;
@@ -67,6 +67,6 @@ public class AuthController {
 
     // Deliberately excludes the password hash from every response sent to the Android app.
     private UserResponse toResponse(User u) {
-        return new UserResponse(u.getId(), u.getName(), u.getEmail(), u.getBalance());
+        return new UserResponse(u.getId(), u.getPublicId(), u.getName(), u.getEmail(), u.getBalance());
     }
 }

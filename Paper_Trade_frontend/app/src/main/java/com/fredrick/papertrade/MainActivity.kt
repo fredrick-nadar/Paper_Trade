@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
     private fun pushUserToAnalyticsAndCleverTap(user: User) {
         // Login links the backend user to the CleverTap profile and identifies the same user in Analytics.
         val profileUpdate = hashMapOf<String, Any>(
-            "Identity" to user.id.toString(),
+            "Identity" to user.publicId,
             "Name" to user.name,
             "Email" to user.email,
             "Account Balance" to user.balance
@@ -100,10 +100,10 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
         registerFcmToken()
 
-        firebaseAnalytics.setUserId(user.id.toString())
+        firebaseAnalytics.setUserId(user.publicId)
 
         val loginParams = Bundle().apply {
-            putString("user_id", user.id.toString())
+            putString("user_id", user.publicId)
             putString("method", "paper_trade_backend")
         }
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN, loginParams)

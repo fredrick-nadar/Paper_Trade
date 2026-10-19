@@ -54,7 +54,7 @@ private val ErrorRed = Color(0xFFC62828)
 private const val BACKEND_CONNECT_TIMEOUT_MILLIS = 30_000
 private const val BACKEND_READ_TIMEOUT_MILLIS = 30_000
 
-data class User(val id: Long, val name: String, val email: String, val balance: Double)
+data class User(val id: Long, val publicId: String, val name: String, val email: String, val balance: Double)
 
 // Separates HTTP/authentication failures from network and parsing failures so the UI can react appropriately.
 class AuthException(message: String, val code: Int) : Exception(message)
@@ -93,7 +93,7 @@ private fun friendlyError(e: Exception): String = when (e) {
 
 // Converts the backend's public user JSON into the model used by Compose screens.
 private fun parseUser(json: JSONObject) =
-    User(json.getLong("id"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
+    User(json.getLong("id"), json.getString("publicId"), json.getString("name"), json.getString("email"), json.getDouble("balance"))
 
 /** Sends a request to the backend and returns the JSON body, or throws AuthException with the server's message. */
 suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
