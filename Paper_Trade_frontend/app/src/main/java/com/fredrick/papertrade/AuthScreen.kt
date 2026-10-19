@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -29,7 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +57,38 @@ data class User(val id: Long, val name: String, val email: String, val balance: 
 
 // Separates HTTP/authentication failures from network and parsing failures so the UI can react appropriately.
 class AuthException(message: String, val code: Int) : Exception(message)
+
+private const val MIN_PASSWORD_LENGTH = 6
+private const val MAX_NAME_LENGTH = 50
+
+private fun nameError(name: String) = when {
+    name.isBlank() -> "Enter your name"
+    name.trim().length > MAX_NAME_LENGTH -> "Name must be $MAX_NAME_LENGTH characters or fewer"
+    else -> null
+}
+
+private fun emailError(email: String) = when {
+    email.isBlank() -> "Enter your email"
+    !android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> "Enter a valid email, like name@example.com"
+    else -> null
+}
+
+// Login only checks for presence so users with older passwords are never blocked client-side.
+private fun passwordError(password: String, isSignup: Boolean) = when {
+    password.isEmpty() -> "Enter your password"
+    isSignup && password.length < MIN_PASSWORD_LENGTH -> "Use at least $MIN_PASSWORD_LENGTH characters"
+    else -> null
+}
+
+/** Turns a failed request into a message the user can act on. */
+private fun friendlyError(e: Exception): String = when (e) {
+    is java.net.SocketTimeoutException ->
+        "The server is taking too long to respond. It may be waking up, so please try again in a moment."
+    is java.net.UnknownHostException -> "No internet connection. Check your network and try again."
+    is java.io.IOException -> "Can't reach the server. Check your connection and try again."
+    is AuthException -> if (e.code >= 500) "The server hit a problem. Please try again shortly." else e.message.orEmpty()
+    else -> "Something went wrong. Please try again."
+}
 
 // Converts the backend's public user JSON into the model used by Compose screens.
 private fun parseUser(json: JSONObject) =
@@ -110,9 +147,14 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var nameErr by remember { mutableStateOf<String?>(null) }
+    var emailErr by remember { mutableStateOf<String?>(null) }
+    var passwordErr by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showPassword by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = DarkGreen,
@@ -121,29 +163,32 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
         unfocusedLabelColor = SubtleText,
         cursorColor = DarkGreen,
         focusedTextColor = TextGreen,
-        unfocusedTextColor = TextGreen
+        unfocusedTextColor = TextGreen,
+        errorBorderColor = ErrorRed,
+        errorLabelColor = ErrorRed,
+        errorSupportingTextColor = ErrorRed,
+        errorCursorColor = ErrorRed
     )
 
     fun submit() {
         // Validation is immediate for user feedback; the backend validates the same request again.
+        if (loading) return
         error = null
-        if (email.isBlank() || password.isBlank() || (isSignup && name.isBlank())) {
-            error = "Please fill in all fields"
-            return
-        }
-        if (isSignup && password.length < 6) {
-            error = "Password must be at least 6 characters"
-            return
-        }
+        nameErr = if (isSignup) nameError(name) else null
+        emailErr = emailError(email)
+        passwordErr = passwordError(password, isSignup)
+        if (nameErr != null || emailErr != null || passwordErr != null) return
+
+        focusManager.clearFocus()
         loading = true
         scope.launch {
             try {
-                val body = JSONObject().put("email", email).put("password", password)
-                if (isSignup) body.put("name", name)
+                val body = JSONObject().put("email", email.trim()).put("password", password)
+                if (isSignup) body.put("name", name.trim())
                 val (token, user) = callAuth(if (isSignup) "/auth/signup" else "/auth/login", body)
                 onAuthenticated(token, user)
             } catch (e: Exception) {
-                error = if (e is java.io.IOException) "Can't reach the server" else e.message
+                error = friendlyError(e)
             } finally {
                 loading = false
             }
@@ -174,24 +219,40 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
 
             if (isSignup) {
                 OutlinedTextField(
-                    value = name, onValueChange = { name = it },
+                    value = name, onValueChange = { name = it; nameErr = null },
                     label = { Text("Name") }, singleLine = true,
+                    isError = nameErr != null,
+                    supportingText = nameErr?.let { { Text(it) } },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     colors = fieldColors, modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(4.dp))
             }
             OutlinedTextField(
-                value = email, onValueChange = { email = it },
+                value = email, onValueChange = { email = it; emailErr = null },
                 label = { Text("Email") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                isError = emailErr != null,
+                supportingText = emailErr?.let { { Text(it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 colors = fieldColors, modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
             OutlinedTextField(
-                value = password, onValueChange = { password = it },
+                value = password, onValueChange = { password = it; passwordErr = null },
                 label = { Text("Password") }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                isError = passwordErr != null,
+                supportingText = (passwordErr
+                    ?: if (isSignup) "At least $MIN_PASSWORD_LENGTH characters" else null)?.let { { Text(it) } },
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    TextButton(onClick = { showPassword = !showPassword }) {
+                        Text(if (showPassword) "Hide" else "Show", color = DarkGreen)
+                    }
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
                 colors = fieldColors, modifier = Modifier.fillMaxWidth()
             )
 
@@ -211,7 +272,10 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
                 Text(if (loading) "Please wait..." else if (isSignup) "Sign up" else "Log in", fontSize = 17.sp)
             }
 
-            TextButton(onClick = { isSignup = !isSignup; error = null }) {
+            TextButton(onClick = {
+                isSignup = !isSignup
+                error = null; nameErr = null; emailErr = null; passwordErr = null
+            }) {
                 Text(
                     if (isSignup) "Already have an account? Log in" else "New here? Create an account",
                     color = DarkGreen
