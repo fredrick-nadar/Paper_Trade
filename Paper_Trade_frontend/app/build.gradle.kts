@@ -28,7 +28,7 @@ android {
         buildConfigField(
             "String",
             "BACKEND_URL",
-            "\"${backendUrl.trimEnd('/')}/\""
+            "\"${backendUrl.trimEnd('/')}\""
         )
     }
 
