@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.util.Log
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
@@ -27,11 +27,13 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.messaging.FirebaseMessaging
 
 
-class MainActivity : ComponentActivity(), CTPushNotificationListener {
+// CleverTap in-apps need a FragmentActivity (which is also a ComponentActivity, so Compose is unaffected).
+class MainActivity : FragmentActivity(), CTPushNotificationListener {
 
     private val notificationTag = "PaperTradePush"
     var cleverTapDefaultInstance: CleverTapAPI? = null
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private val inAppHandler by lazy { InAppHandler(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // App startup initializes CleverTap/Firebase before Compose starts the login flow.
@@ -41,6 +43,7 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
             ctPushNotificationListener = this@MainActivity
         }
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        cleverTapDefaultInstance?.let(inAppHandler::register)
         registerFcmToken()
         requestNotificationPermission()
 
@@ -82,11 +85,21 @@ class MainActivity : ComponentActivity(), CTPushNotificationListener {
 
     private fun requestNotificationPermission() {
         // Android 13+ requires explicit permission before any push can be displayed.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        // The first launches are left to the CleverTap push-primer in-app, which asks with context;
+        // if it never granted permission, fall back to the plain system prompt from the third launch on.
+        val prefs = getSharedPreferences("paper_trade_prefs", Context.MODE_PRIVATE)
+        val launches = prefs.getInt("launch_count", 0) + 1
+        prefs.edit().putInt("launch_count", launches).apply()
+        if (launches >= 3 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cleverTapDefaultInstance?.let(inAppHandler::unregister)
     }
 
     private fun pushUserToAnalyticsAndCleverTap(user: User) {

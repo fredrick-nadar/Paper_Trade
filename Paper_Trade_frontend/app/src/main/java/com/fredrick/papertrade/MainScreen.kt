@@ -10,6 +10,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,15 @@ fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
     var selected by remember { mutableIntStateOf(0) }
     var current by remember { mutableStateOf(user) }              // keeps the balance up to date after trades
     var tradeSymbol by remember { mutableStateOf<String?>(null) } // stock tapped on the Stocks tab
+
+    // In-app buttons can ask for a tab (action key-value: open_stocks / open_trade / open_portfolio).
+    LaunchedEffect(Unit) {
+        InAppNav.request.collect { action ->
+            val tab = action?.let(InAppNav::tabFor) ?: return@collect
+            selected = tab
+            InAppNav.request.value = null
+        }
+    }
 
     Column(Modifier.fillMaxSize().background(Background)) {
         Box(Modifier.weight(1f)) {

@@ -15,6 +15,18 @@ object Analytics {
         ct(context)?.pushEvent(name, props)
     }
 
+    fun inAppShown(context: Context, campaignId: String) =
+        track(context, "InApp Shown", mapOf("Campaign Id" to campaignId))
+
+    fun inAppDismissed(context: Context, campaignId: String) =
+        track(context, "InApp Dismissed", mapOf("Campaign Id" to campaignId))
+
+    fun inAppButtonClicked(context: Context, campaignId: String, action: String) =
+        track(context, "InApp Button Clicked", mapOf("Campaign Id" to campaignId, "Action" to action))
+
+    fun pushPermissionResponse(context: Context, accepted: Boolean) =
+        track(context, "Push Permission Response", mapOf("Accepted" to accepted))
+
     fun signedUp(context: Context) = track(context, "Signed Up", mapOf("Method" to "email"))
 
     fun loggedIn(context: Context) = track(context, "Logged In", mapOf("Method" to "email"))
@@ -34,6 +46,10 @@ object Analytics {
         context: Context, symbol: String, isBuy: Boolean, quantity: Int,
         price: Double, total: Double, balanceAfter: Double
     ) {
+        // Attribute the trade to an in-app the user tapped in the last 24 hours.
+        InAppHandler.recentClick(context)?.let { (campaign, action) ->
+            track(context, "InApp Action Completed", mapOf("Campaign Id" to campaign, "Action" to action, "Completed" to "trade"))
+        }
         track(
             context, "Trade Placed",
             mapOf(
