@@ -15,14 +15,15 @@ object Analytics {
         ct(context)?.pushEvent(name, props)
     }
 
-    fun inAppShown(context: Context, campaignId: String) =
-        track(context, "InApp Shown", mapOf("Campaign Id" to campaignId))
+    // "Template" is only set for our own custom-code templates; SDK-rendered in-apps leave it empty.
+    fun inAppShown(context: Context, campaignId: String, template: String = "") =
+        track(context, "InApp Shown", mapOf("Campaign Id" to campaignId, "Template" to template))
 
-    fun inAppDismissed(context: Context, campaignId: String) =
-        track(context, "InApp Dismissed", mapOf("Campaign Id" to campaignId))
+    fun inAppDismissed(context: Context, campaignId: String, template: String = "", reason: String = "") =
+        track(context, "InApp Dismissed", mapOf("Campaign Id" to campaignId, "Template" to template, "Reason" to reason))
 
-    fun inAppButtonClicked(context: Context, campaignId: String, action: String) =
-        track(context, "InApp Button Clicked", mapOf("Campaign Id" to campaignId, "Action" to action))
+    fun inAppButtonClicked(context: Context, campaignId: String, action: String, template: String = "") =
+        track(context, "InApp Button Clicked", mapOf("Campaign Id" to campaignId, "Action" to action, "Template" to template))
 
     fun pushPermissionResponse(context: Context, accepted: Boolean) =
         track(context, "Push Permission Response", mapOf("Accepted" to accepted))

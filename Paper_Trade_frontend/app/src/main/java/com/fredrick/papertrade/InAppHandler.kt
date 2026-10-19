@@ -67,6 +67,13 @@ class InAppHandler(context: Context) :
     }
 
     companion object {
+        /** Remembers the last tapped in-app so a later trade can be attributed to it. */
+        fun rememberClick(context: Context, campaign: String, action: String) {
+            context.applicationContext.getSharedPreferences("inapp_state", Context.MODE_PRIVATE).edit()
+                .putString("last_campaign", campaign).putString("last_action", action)
+                .putLong("last_click_ms", System.currentTimeMillis()).apply()
+        }
+
         /** (campaign id, action) when the user tapped an in-app button in the last 24 hours, else null. */
         fun recentClick(context: Context): Pair<String, String>? {
             val prefs = context.applicationContext.getSharedPreferences("inapp_state", Context.MODE_PRIVATE)

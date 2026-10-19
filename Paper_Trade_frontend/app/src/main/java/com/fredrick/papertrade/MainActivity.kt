@@ -44,6 +44,8 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         }
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         cleverTapDefaultInstance?.let(inAppHandler::register)
+        // Publishes our custom templates to the dashboard. CleverTap says: debug builds with a test user only.
+        if (BuildConfig.DEBUG) cleverTapDefaultInstance?.syncRegisteredInAppTemplates()
         registerFcmToken()
         requestNotificationPermission()
 
@@ -186,4 +188,7 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
             )
         }
     }
+
+    // CleverTap custom-template in-apps (welcome, nudges, push primer) render above any screen.
+    InAppOverlayHost()
 }

@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.Paper_Trade_frontend"
-        android:name="com.clevertap.android.sdk.Application">
+        android:name=".PaperTradeApplication">
 
         <!-- CleverTap uses these credentials to identify the project receiving campaigns. -->
         <meta-data
