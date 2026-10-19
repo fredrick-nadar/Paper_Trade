@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -72,12 +73,16 @@ fun DashboardScreen(token: String, onLogout: () -> Unit) {
     // The dashboard refreshes independently so live prices and P/L remain current.
     var portfolio by remember { mutableStateOf<Portfolio?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     // Loads on open, then refreshes every 30 seconds
     LaunchedEffect(Unit) {
         while (true) {
             try {
-                portfolio = fetchPortfolio(token)
+                val loaded = fetchPortfolio(token)
+                // Track once per screen visit, not on every 30-second refresh.
+                if (portfolio == null) Analytics.portfolioViewed(context, loaded.holdings.size, loaded.value, loaded.pnl)
+                portfolio = loaded
                 error = null
             } catch (e: AuthException) {
                 if (e.code == 401) { onLogout(); return@LaunchedEffect }

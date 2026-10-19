@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -155,6 +156,7 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
     var loading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = DarkGreen,
@@ -186,7 +188,9 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
                 val body = JSONObject().put("email", email.trim()).put("password", password)
                 if (isSignup) body.put("name", name.trim())
                 val (token, user) = callAuth(if (isSignup) "/auth/signup" else "/auth/login", body)
+                // onAuthenticated runs the CleverTap login first, so these events land on the right profile.
                 onAuthenticated(token, user)
+                if (isSignup) Analytics.signedUp(context) else Analytics.loggedIn(context)
             } catch (e: Exception) {
                 error = friendlyError(e)
             } finally {

@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,7 @@ fun TradeScreen(
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Pair<Boolean, String>?>(null) }   // (isSuccess, text)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Prices refresh every 30 seconds; holdings load once (and again after every trade)
     LaunchedEffect(Unit) {
@@ -103,12 +105,18 @@ fun TradeScreen(
                 val body = JSONObject().put("symbol", stock.symbol).put("type", if (isBuy) "BUY" else "SELL").put("quantity", qty)
                 val r = request("POST", "/trades", body, token)
                 onBalanceChange(r.getDouble("balance"))
+                Analytics.tradePlaced(
+                    context, stock.symbol, isBuy, qty,
+                    r.getDouble("price"), r.getDouble("total"), r.getDouble("balance")
+                )
                 owned = fetchOwned(token)
                 message = true to "${if (isBuy) "Bought" else "Sold"} $qty ${stock.symbol} at ${money(r.getDouble("price"))} · ${money(r.getDouble("total"))}"
                 qty = 1
             } catch (e: AuthException) {
+                Analytics.tradeFailed(context, stock.symbol, isBuy, qty, "HTTP ${e.code}: ${e.message}")
                 if (e.code == 401) onLogout() else message = false to (e.message ?: "Something went wrong")
             } catch (e: Exception) {
+                Analytics.tradeFailed(context, stock.symbol, isBuy, qty, "network")
                 message = false to "Can't reach the server"
             } finally {
                 busy = false

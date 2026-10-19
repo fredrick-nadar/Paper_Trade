@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -69,6 +70,7 @@ fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLo
     var stocks by remember { mutableStateOf<List<StockQuote>?>(null) }
     var updatedAt by remember { mutableStateOf(0L) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     // Loads prices now, then again every 30 seconds while this screen is visible
     LaunchedEffect(Unit) {
@@ -128,7 +130,10 @@ fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLo
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
-                    items(list, key = { it.symbol }) { StockRow(it, onClick = { onStockClick(it.symbol) }) }
+                    items(list, key = { it.symbol }) { StockRow(it, onClick = {
+                        Analytics.stockViewed(context, it.symbol, it.price)
+                        onStockClick(it.symbol)
+                    }) }
                 }
             }
         }
