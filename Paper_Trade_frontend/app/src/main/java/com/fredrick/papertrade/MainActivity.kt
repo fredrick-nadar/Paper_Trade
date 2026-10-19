@@ -137,28 +137,17 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
     // A saved JWT is checked against /auth/me before the login screen is shown.
     LaunchedEffect(Unit) {
         val saved = prefs.getString("token", null) ?: return@LaunchedEffect
-        BackendKeepAliveScheduler.start(context)
         try {
             user = fetchCurrentUser(saved)
             user?.let(onUserAuthenticated)
         } catch (e: AuthException) {
             if (e.code == 401) {
                 prefs.edit().remove("token").apply()
-                BackendKeepAliveScheduler.stop(context)
             }
         } catch (e: Exception) {
             // Server unreachable: keep the token, just show the login screen
         }
         checkingSession = false
-    }
-
-    LaunchedEffect(user) {
-        if (user == null) {
-            BackendKeepAliveScheduler.stop(context)
-            return@LaunchedEffect
-        }
-
-        BackendKeepAliveScheduler.start(context)
     }
 
     Crossfade(targetState = showLogin, label = "app") { isLogin ->
@@ -168,13 +157,11 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
             else if (u == null) AuthScreen(onAuthenticated = { token, loggedIn ->
                 prefs.edit().putString("token", token).apply()
                 user = loggedIn
-                BackendKeepAliveScheduler.start(context)
                 onUserAuthenticated(loggedIn)
             })
             else MainScreen(u, token = prefs.getString("token", "") ?: "", onLogout = {
                 prefs.edit().remove("token").apply()
                 user = null
-                BackendKeepAliveScheduler.stop(context)
             })
         } else {
             OnboardingScreen(
