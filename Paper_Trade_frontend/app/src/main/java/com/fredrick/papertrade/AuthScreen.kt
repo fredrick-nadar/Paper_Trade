@@ -78,8 +78,14 @@ suspend fun request(method: String, path: String, body: JSONObject? = null, toke
             } else {
                 val text = conn.errorStream?.bufferedReader()?.readText().orEmpty()
                 val message = runCatching { JSONObject(text).getString("message") }.getOrNull()
+                // Spring's default error body has no "message", so map the common statuses here.
                 throw AuthException(
-                    if (conn.responseCode == 400) "Please check your details" else message ?: "Something went wrong",
+                    when (conn.responseCode) {
+                        400 -> "Please check your details"
+                        401 -> message ?: "Invalid email or password"
+                        409 -> message ?: "Email already registered"
+                        else -> message ?: "Something went wrong"
+                    },
                     conn.responseCode
                 )
             }
