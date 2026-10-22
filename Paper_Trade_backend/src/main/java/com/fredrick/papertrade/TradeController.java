@@ -18,7 +18,8 @@ public class TradeController {
     record TradeRequest(@Pattern(regexp = "[A-Z]{1,5}") String symbol,
                         @Pattern(regexp = "BUY|SELL") String type,
                         @Min(1) @Max(10000) int quantity) {}
-    record TradeResponse(String symbol, String type, int quantity, double price, double total, double balance) {}
+    record TradeResponse(String symbol, String type, int quantity, double price, double total, double balance,
+                           boolean firstTrade) {}
     record HoldingDto(String symbol, int quantity, double avgPrice) {}
     record HoldingsResponse(double balance, List<HoldingDto> holdings) {}
 
@@ -70,9 +71,11 @@ public class TradeController {
             user.setBalance(round(user.getBalance() + total));
         }
 
+        // Decided on the server so reinstalls and other devices cannot repeat the "first trade" milestone.
+        boolean firstTrade = !trades.existsByUserId(userId);
         users.save(user);
         trades.save(new Trade(userId, req.symbol(), req.type(), req.quantity(), price, total));
-        return new TradeResponse(req.symbol(), req.type(), req.quantity(), price, total, user.getBalance());
+        return new TradeResponse(req.symbol(), req.type(), req.quantity(), price, total, user.getBalance(), firstTrade);
     }
 
     // Returns the user's balance and sorted holdings for the trade screen.

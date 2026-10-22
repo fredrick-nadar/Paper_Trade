@@ -45,7 +45,7 @@ object Analytics {
 
     fun tradePlaced(
         context: Context, symbol: String, isBuy: Boolean, quantity: Int,
-        price: Double, total: Double, balanceAfter: Double
+        price: Double, total: Double, balanceAfter: Double, firstTrade: Boolean
     ) {
         // Attribute the trade to an in-app the user tapped in the last 24 hours.
         InAppHandler.recentClick(context)?.let { (campaign, action) ->
@@ -55,9 +55,17 @@ object Analytics {
             context, "Trade Placed",
             mapOf(
                 "Symbol" to symbol, "Side" to if (isBuy) "BUY" else "SELL", "Quantity" to quantity,
-                "Price" to price, "Total" to total, "Balance After" to balanceAfter
+                "Price" to price, "Total" to total, "Balance After" to balanceAfter,
+                "First Trade" to firstTrade
             )
         )
+        // Separate event so a campaign can trigger on it directly; the server guarantees it fires once per user.
+        if (firstTrade) {
+            track(
+                context, "First Trade Completed",
+                mapOf("Symbol" to symbol, "Side" to if (isBuy) "BUY" else "SELL", "Quantity" to quantity, "Total" to total)
+            )
+        }
         ct(context)?.apply {
             // Charged event for money movement. Payment mode marks it as virtual so reports can filter it out.
             pushChargedEvent(
@@ -84,6 +92,9 @@ object Analytics {
                     "Last Trade Date" to SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
                 )
             )
+            if (firstTrade) {
+                pushProfile(mapOf("First Trade Date" to SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())))
+            }
         }
     }
 

@@ -43,39 +43,23 @@ The project follows a standard three-layer architecture:
 
 ### Frontend
 
-1. Open the `Paper_Trade_frontend` project in Android Studio.
-2. Build and run the application on an Android Emulator.
-3. The backend URL is `BASE_URL` in `AuthScreen.kt`:
-   * Physical phone over USB: `http://localhost:8080`, plus `adb reverse tcp:8080 tcp:8080` each time the phone is reconnected.
-   * Android emulator: `http://10.0.2.2:8080`.
+1. Open the `Paper_Trade_frontend` project in Android Studio and run it on your phone.
+2. Debug builds pick the backend automatically (`Backend.kt`): if a server answers on `http://localhost:8080` they use it, otherwise they use production (`BACKEND_URL` in `gradle.properties`). Release builds always use production.
+3. To use the local backend from a USB-connected phone, run `adb reverse tcp:8080 tcp:8080` (it resets when the phone is unplugged or restarted).
 
-> **Warning:** If the app shows "Can't reach the server" while the backend is running, the phone can't see `localhost`. Re-run `adb reverse tcp:8080 tcp:8080` (it resets when the phone is unplugged or restarted) or use the right `BASE_URL` above.
+> **Local vs production database:** `Paper_Trade_backend/.env` must not set `DATABASE_URL`, so local runs use the Docker Postgres. Production (Render) sets its own `DATABASE_URL`. Keep production credentials under a `PROD_` prefix in `.env`, where they are ignored.
 
+## CleverTap Integration
 
-## CleverTap Integration Plan (not yet implemented)
+**Implemented**
 
-The SDK is not added yet. This is the planned event and profile design.
+| Area | Status |
+|---|---|
+| Android push | FCM service, token registration, viewed/clicked tracking, Android 13+ permission flow, fallback notification. |
+| In-app | SDK listeners, custom templates (Message card, Push Primer), tab-navigation button actions, in-app events. |
+| Profile and events | `onUserLogin`, `Signed Up`, `Logged In`, `Stock Viewed`, `Portfolio Viewed`, `Trade Placed`, `Trade Failed`, and a Charged event per trade (payment mode "Virtual Balance"). |
+| First-trade push | The backend returns `firstTrade` on `POST /trades`; the app sends `First Trade Completed` (once per user) and the `First Trade Date` profile property. A push campaign triggered on that event is verified working. |
 
-**Setup:** add the CleverTap Android SDK, set the Account ID and Token in the manifest, and initialise it in an `Application` class. Push needs Firebase (FCM) and the notification permission on Android 13+.
+**Not yet implemented:** App Inbox, Native Display, rich push, onboarding/chart events, `Logged Out` and `Login Failed`.
 
-**User profile** (send with `onUserLogin` at signup and login; refresh after each trade):
-`Name`, `Email`, `Identity` (user id), `Balance`, `Portfolio Value`, `Total P&L`, `Number of Holdings`, `Total Trades`, `Signup Date`, `Last Trade Date`, `Favourite Stock`.
-
-**Events**
-
-| Area | Event | Properties |
-|---|---|---|
-| Onboarding | `Onboarding Viewed`, `Onboarding Completed`, `Onboarding Skipped` | `Slide Number` |
-| Auth | `Signed Up`, `Logged In`, `Logged Out`, `Login Failed` | `Reason` |
-| Stocks | `Stocks List Viewed`, `Stock Viewed` | `Symbol`, `Price`, `Change %` |
-| Charts | `Chart Range Changed`, `Chart Type Changed` | `Symbol`, `Range`, `Type` |
-| Trade | `Trade Initiated`, `Trade Completed`, `Trade Failed` | `Symbol`, `Side`, `Quantity`, `Price`, `Total`, `Failure Reason` |
-| Dashboard | `Dashboard Viewed` | `Balance`, `Holdings Count` |
-| Errors | `Server Unreachable` | `Screen` |
-
-* Record `Trade Completed` as a Charged event (`pushChargedEvent`), with the trade total as the amount.
-* Send `Trade Completed` and the balance/P&L properties from the backend (CleverTap server API), since the server sets the final price. Screen views, taps and chart changes come from the app.
-
-**Dashboard ideas:** funnel (Signed Up → Stock Viewed → Trade Initiated → Trade Completed); segments (never traded, frequent traders, low balance, big losses); retention by signup week; push, in-app and email campaigns (e.g. "no trade in 3 days"); App Inbox for trade summaries.
-
-**Suggested first pass:** auth events, `Stock Viewed`, the trade events and the profile properties.
+**Profile properties:** `Name`, `Email`, `Identity` (random public id), `Account Balance`, `Holdings Count`, `Total Trades`, `Last Trade Symbol`, `Last Trade Date`, `First Trade Date`.

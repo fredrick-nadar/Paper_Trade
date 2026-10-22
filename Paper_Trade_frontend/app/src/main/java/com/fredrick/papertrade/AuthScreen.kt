@@ -98,7 +98,7 @@ private fun parseUser(json: JSONObject) =
 /** Sends a request to the backend and returns the JSON body, or throws AuthException with the server's message. */
 suspend fun request(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject =
     withContext(Dispatchers.IO) {
-        val conn = URL(BuildConfig.BACKEND_URL + path).openConnection() as HttpURLConnection
+        val conn = URL(Backend.baseUrl() + path).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
             // Render free services can take time to wake after being idle.
@@ -127,6 +127,10 @@ suspend fun request(method: String, path: String, body: JSONObject? = null, toke
                     conn.responseCode
                 )
             }
+        } catch (e: java.io.IOException) {
+            // Re-detect local vs production on the next request.
+            Backend.reset()
+            throw e
         } finally {
             conn.disconnect()
         }

@@ -107,7 +107,8 @@ fun TradeScreen(
                 onBalanceChange(r.getDouble("balance"))
                 Analytics.tradePlaced(
                     context, stock.symbol, isBuy, qty,
-                    r.getDouble("price"), r.getDouble("total"), r.getDouble("balance")
+                    r.getDouble("price"), r.getDouble("total"), r.getDouble("balance"),
+                    r.optBoolean("firstTrade")
                 )
                 owned = fetchOwned(token)
                 message = true to "${if (isBuy) "Bought" else "Sold"} $qty ${stock.symbol} at ${money(r.getDouble("price"))} · ${money(r.getDouble("total"))}"
