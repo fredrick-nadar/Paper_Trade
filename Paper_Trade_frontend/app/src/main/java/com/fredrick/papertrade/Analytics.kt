@@ -63,6 +63,8 @@ object Analytics {
         context: Context, symbol: String, isBuy: Boolean, quantity: Int,
         price: Double, total: Double, balanceBefore: Double, balanceAfter: Double, firstTrade: Boolean
     ) {
+        // The "make your first trade" banner is moot once the user trades.
+        NativeDisplay.hide()
         // Attribute the trade to an in-app the user tapped in the last 24 hours.
         InAppHandler.recentClick(context)?.let { (campaign, action) ->
             track(context, "InApp Action Completed", mapOf("Campaign Id" to campaign, "Action" to action, "Completed" to "trade"))

@@ -108,6 +108,8 @@ fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLo
                 TextButton(onClick = { Analytics.loggedOut(context); onLogout() }) { Text("Log out", color = DarkGreen) }
             }
 
+            NativeDisplayBanner(Modifier.padding(top = 14.dp))
+
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text("Stocks", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextGreen, modifier = Modifier.weight(1f))

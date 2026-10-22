@@ -48,6 +48,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         cleverTapDefaultInstance?.let(inAppHandler::register)
         cleverTapDefaultInstance?.let(Inbox::init)
+        cleverTapDefaultInstance?.let(NativeDisplay::register)
         // Publishes our custom templates to the dashboard. CleverTap says: debug builds with a test user only.
         if (BuildConfig.DEBUG) cleverTapDefaultInstance?.syncRegisteredInAppTemplates()
         registerFcmToken()
@@ -124,6 +125,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
             "Account Balance" to user.balance,
             "Low Balance" to (user.balance < Analytics.LOW_BALANCE_THRESHOLD)
         )
+        NativeDisplay.reset()
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
         cleverTapDefaultInstance?.let(Inbox::init)
         registerFcmToken()
