@@ -30,7 +30,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 // CleverTap in-apps need a FragmentActivity (which is also a ComponentActivity, so Compose is unaffected).
 class MainActivity : FragmentActivity(), CTPushNotificationListener {
 
-    private val notificationTag = "PaperTradePush"
+    private val notificationTag = "PPeraperTradePush"
     var cleverTapDefaultInstance: CleverTapAPI? = null
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private val inAppHandler by lazy { InAppHandler(this) }
@@ -47,6 +47,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         }
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         cleverTapDefaultInstance?.let(inAppHandler::register)
+        cleverTapDefaultInstance?.let(Inbox::init)
         // Publishes our custom templates to the dashboard. CleverTap says: debug builds with a test user only.
         if (BuildConfig.DEBUG) cleverTapDefaultInstance?.syncRegisteredInAppTemplates()
         registerFcmToken()
@@ -103,6 +104,12 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Receipts may have been read or deleted in the SDK inbox screen.
+        cleverTapDefaultInstance?.let(Inbox::update)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         cleverTapDefaultInstance?.let(inAppHandler::unregister)
@@ -118,6 +125,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
             "Low Balance" to (user.balance < Analytics.LOW_BALANCE_THRESHOLD)
         )
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
+        cleverTapDefaultInstance?.let(Inbox::init)
         registerFcmToken()
 
         firebaseAnalytics.setUserId(user.publicId)

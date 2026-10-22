@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.clevertap.android.sdk)
     implementation(libs.coil.compose)
+    implementation(libs.material)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

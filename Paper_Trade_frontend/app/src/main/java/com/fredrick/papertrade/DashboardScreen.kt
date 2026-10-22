@@ -14,7 +14,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +76,26 @@ private fun money(v: Double) = "$${"%,.2f".format(v)}"
 private fun signed(v: Double) = (if (v >= 0) "+" else "-") + money(abs(v))
 private fun signedPct(v: Double) = (if (v >= 0) "+" else "-") + "%.2f".format(abs(v)) + "%"
 
+private val BellIcon = ImageVector.Builder("inbox", 24.dp, 24.dp, 24f, 24f)
+    .addPath(
+        PathParser().parsePathString(
+            "M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.89,2 2,2zM18,16v-5c0,-3.07 -1.64,-5.64 -4.5,-6.32L13.5,4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.63,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z"
+        ).toNodes(),
+        fill = SolidColor(Color(0xFF1F3D2A))
+    ).build()
+
+/** Opens the CleverTap inbox of trade receipts; the badge shows unread ones. */
+@Composable
+private fun InboxBell() {
+    val context = LocalContext.current
+    val unread by Inbox.unread.collectAsState()
+    IconButton(onClick = { Inbox.open(context) }) {
+        BadgedBox(badge = { if (unread > 0) Badge { Text(if (unread > 9) "9+" else unread.toString()) } }) {
+            Icon(BellIcon, contentDescription = "Trade receipts")
+        }
+    }
+}
+
 @Composable
 fun DashboardScreen(token: String, onLogout: () -> Unit) {
     // The dashboard refreshes independently so live prices and P/L remain current.
@@ -99,7 +127,10 @@ fun DashboardScreen(token: String, onLogout: () -> Unit) {
             .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(12.dp))
-        Text("Dashboard", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextGreen)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Dashboard", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextGreen, modifier = Modifier.weight(1f))
+            InboxBell()
+        }
         error?.let { Text(it, color = Loss, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)) }
         Spacer(Modifier.height(14.dp))
 
