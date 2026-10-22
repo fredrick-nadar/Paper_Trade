@@ -105,7 +105,7 @@ fun StocksScreen(user: User, token: String, onStockClick: (String) -> Unit, onLo
                     )
                     Text("Available balance", fontSize = 13.sp, color = SubtleText)
                 }
-                TextButton(onClick = onLogout) { Text("Log out", color = DarkGreen) }
+                TextButton(onClick = { Analytics.loggedOut(context); onLogout() }) { Text("Log out", color = DarkGreen) }
             }
 
             Spacer(Modifier.height(20.dp))

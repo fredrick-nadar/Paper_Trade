@@ -39,6 +39,9 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         // App startup initializes CleverTap/Firebase before Compose starts the login flow.
         super.onCreate(savedInstanceState)
         handlePushIntent(intent)
+        DeepLinks.handle(intent?.data)
+        // No in-apps until the user is signed in; PaperTradeApp lifts this.
+        InAppGate.set(this, "signed_out", true)
         cleverTapDefaultInstance = CleverTapAPI.getDefaultInstance(applicationContext)?.apply {
             ctPushNotificationListener = this@MainActivity
         }
@@ -58,6 +61,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         super.onNewIntent(intent)
         setIntent(intent)
         handlePushIntent(intent)
+        DeepLinks.handle(intent.data)
     }
 
     private fun handlePushIntent(intent: android.content.Intent?) {
@@ -110,7 +114,8 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
             "Identity" to user.publicId,
             "Name" to user.name,
             "Email" to user.email,
-            "Account Balance" to user.balance
+            "Account Balance" to user.balance,
+            "Low Balance" to (user.balance < Analytics.LOW_BALANCE_THRESHOLD)
         )
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
         registerFcmToken()
@@ -146,6 +151,9 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
     }
 
     var user by remember { mutableStateOf<User?>(null) }
+
+    // Campaign in-apps wait until the user is signed in.
+    LaunchedEffect(user) { InAppGate.set(context, "signed_out", user == null) }
 
     // If a JWT was saved earlier, check it with the backend before showing the login screen
     var checkingSession by remember { mutableStateOf(prefs.getString("token", null) != null) }
@@ -183,6 +191,7 @@ fun PaperTradeApp(onUserAuthenticated: (User) -> Unit = {}) {
                 onFinished = {
                     // Remember that onboarding is done, then move on
                     prefs.edit().putBoolean("onboarding_done", true).apply()
+                    Analytics.onboardingCompleted(context)
                     showLogin = true
                 }
             )

@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
@@ -51,10 +52,15 @@ fun MainScreen(user: User, token: String, onLogout: () -> Unit) {
     LaunchedEffect(Unit) {
         InAppNav.request.collect { action ->
             val tab = action?.let(InAppNav::tabFor) ?: return@collect
+            if (tab == 1) InAppNav.symbol.value?.let { tradeSymbol = it }
             selected = tab
             InAppNav.request.value = null
+            InAppNav.symbol.value = null
         }
     }
+
+    val context = LocalContext.current
+    LaunchedEffect(selected) { Analytics.screenViewed(context, tabs[selected].first) }
 
     Column(Modifier.fillMaxSize().background(Background)) {
         Box(Modifier.weight(1f)) {

@@ -1,5 +1,6 @@
 package com.fredrick.papertrade
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,6 +76,7 @@ suspend fun fetchHistory(token: String, symbol: String, range: String): PriceHis
 /** Price history for one stock: line or candlestick, with a range picker that adapts to the stock's age. */
 @Composable
 fun ChartCard(symbol: String, token: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     // Fetches history when the symbol/range changes and lets the user inspect line or candle views.
     var range by remember(symbol) { mutableStateOf("1M") }
     var candleMode by remember { mutableStateOf(false) }
@@ -136,13 +138,22 @@ fun ChartCard(symbol: String, token: String, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(12.dp))
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             ranges.forEach { r ->
-                Chip(RANGE_LABELS[r] ?: r, r == range) { range = r }
+                Chip(RANGE_LABELS[r] ?: r, r == range) {
+                    if (r != range) Analytics.chartRangeChanged(context, symbol, r)
+                    range = r
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Chip("Line", !candleMode) { candleMode = false }
-            Chip("Candles", candleMode) { candleMode = true }
+            Chip("Line", !candleMode) {
+                if (candleMode) Analytics.chartTypeChanged(context, symbol, "Line")
+                candleMode = false
+            }
+            Chip("Candles", candleMode) {
+                if (!candleMode) Analytics.chartTypeChanged(context, symbol, "Candles")
+                candleMode = true
+            }
         }
     }
 }

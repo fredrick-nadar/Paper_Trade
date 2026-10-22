@@ -47,6 +47,16 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- papertrade:// links from in-app and push buttons; see DeepLinks.kt. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="papertrade" />
+            </intent-filter>
         </activity>
 
         <!-- Receives CleverTap's data-only FCM campaigns and renders/tracks them in app code. -->

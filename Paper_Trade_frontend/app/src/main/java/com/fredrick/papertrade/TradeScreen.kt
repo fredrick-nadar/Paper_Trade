@@ -24,6 +24,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -79,6 +80,10 @@ fun TradeScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    // Hold back in-app campaigns while an order is in flight so they cannot cover the result message.
+    LaunchedEffect(busy) { InAppGate.set(context, "trade", busy) }
+    DisposableEffect(Unit) { onDispose { InAppGate.set(context, "trade", false) } }
+
     // Prices refresh every 30 seconds; holdings load once (and again after every trade)
     LaunchedEffect(Unit) {
         try { owned = fetchOwned(token) } catch (e: Exception) { /* shown as 0 owned */ }
@@ -107,7 +112,7 @@ fun TradeScreen(
                 onBalanceChange(r.getDouble("balance"))
                 Analytics.tradePlaced(
                     context, stock.symbol, isBuy, qty,
-                    r.getDouble("price"), r.getDouble("total"), r.getDouble("balance"),
+                    r.getDouble("price"), r.getDouble("total"), user.balance, r.getDouble("balance"),
                     r.optBoolean("firstTrade")
                 )
                 owned = fetchOwned(token)

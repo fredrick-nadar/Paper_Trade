@@ -9,24 +9,40 @@ import java.util.Locale
 
 /** CleverTap event and profile helpers. Every call is a no-op if the SDK is unavailable. */
 object Analytics {
+    /** Balance under which a user gets the "Low Balance Reached" nudge (10% of the $1,000 starting balance). */
+    const val LOW_BALANCE_THRESHOLD = 100.0
+
     private fun ct(context: Context) = CleverTapAPI.getDefaultInstance(context.applicationContext)
 
     private fun track(context: Context, name: String, props: Map<String, Any> = emptyMap()) {
         ct(context)?.pushEvent(name, props)
     }
 
-    // "Template" is only set for our own custom-code templates; SDK-rendered in-apps leave it empty.
-    fun inAppShown(context: Context, campaignId: String, template: String = "") =
-        track(context, "InApp Shown", mapOf("Campaign Id" to campaignId, "Template" to template))
-
+    // Shown and clicked events are not sent here: the SDK records Notification Viewed/Clicked itself.
     fun inAppDismissed(context: Context, campaignId: String, template: String = "", reason: String = "") =
         track(context, "InApp Dismissed", mapOf("Campaign Id" to campaignId, "Template" to template, "Reason" to reason))
 
-    fun inAppButtonClicked(context: Context, campaignId: String, action: String, template: String = "") =
-        track(context, "InApp Button Clicked", mapOf("Campaign Id" to campaignId, "Action" to action, "Template" to template))
-
     fun pushPermissionResponse(context: Context, accepted: Boolean) =
         track(context, "Push Permission Response", mapOf("Accepted" to accepted))
+
+    fun screenViewed(context: Context, screen: String) =
+        track(context, "Screen Viewed", mapOf("Screen" to screen))
+
+    fun onboardingViewed(context: Context, slide: Int) =
+        track(context, "Onboarding Viewed", mapOf("Slide Number" to slide))
+
+    fun onboardingCompleted(context: Context) = track(context, "Onboarding Completed")
+
+    fun loggedOut(context: Context) = track(context, "Logged Out")
+
+    fun authFailed(context: Context, isSignup: Boolean, reason: String) =
+        track(context, if (isSignup) "Signup Failed" else "Login Failed", mapOf("Reason" to reason))
+
+    fun chartRangeChanged(context: Context, symbol: String, range: String) =
+        track(context, "Chart Range Changed", mapOf("Symbol" to symbol, "Range" to range))
+
+    fun chartTypeChanged(context: Context, symbol: String, type: String) =
+        track(context, "Chart Type Changed", mapOf("Symbol" to symbol, "Type" to type))
 
     fun signedUp(context: Context) = track(context, "Signed Up", mapOf("Method" to "email"))
 
@@ -45,7 +61,7 @@ object Analytics {
 
     fun tradePlaced(
         context: Context, symbol: String, isBuy: Boolean, quantity: Int,
-        price: Double, total: Double, balanceAfter: Double, firstTrade: Boolean
+        price: Double, total: Double, balanceBefore: Double, balanceAfter: Double, firstTrade: Boolean
     ) {
         // Attribute the trade to an in-app the user tapped in the last 24 hours.
         InAppHandler.recentClick(context)?.let { (campaign, action) ->
@@ -85,6 +101,8 @@ object Analytics {
                 )
             )
             incrementValue("Total Trades", 1)
+            // Lets segments target everyone who is currently low, not only those who just crossed the line.
+            pushProfile(mapOf("Low Balance" to (balanceAfter < LOW_BALANCE_THRESHOLD)))
             pushProfile(
                 mapOf(
                     "Account Balance" to balanceAfter,
@@ -95,6 +113,14 @@ object Analytics {
             if (firstTrade) {
                 pushProfile(mapOf("First Trade Date" to SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())))
             }
+        }
+        lowBalanceCheck(context, balanceBefore, balanceAfter)
+    }
+
+    /** Fires once per crossing (not on every trade while low), so a campaign cannot spam the user. */
+    private fun lowBalanceCheck(context: Context, before: Double, after: Double) {
+        if (before >= LOW_BALANCE_THRESHOLD && after < LOW_BALANCE_THRESHOLD) {
+            track(context, "Low Balance Reached", mapOf("Balance" to after, "Threshold" to LOW_BALANCE_THRESHOLD))
         }
     }
 

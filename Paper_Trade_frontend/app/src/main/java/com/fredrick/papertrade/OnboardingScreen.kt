@@ -1,5 +1,6 @@
 package com.fredrick.papertrade
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -37,6 +38,9 @@ fun OnboardingScreen(onFinished: () -> Unit) {
 
     // 0f -> 1f progress of the active dot
     val dotFill = remember { Animatable(0f) }
+
+    val context = LocalContext.current
+    LaunchedEffect(currentScreen) { Analytics.onboardingViewed(context, currentScreen + 1) }
 
     // Moves to the next screen after 4 seconds
     LaunchedEffect(currentScreen) {

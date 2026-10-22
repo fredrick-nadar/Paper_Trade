@@ -23,6 +23,8 @@ class InAppCard(
     val primaryText: String,
     val secondaryText: String,
     val accent: String,
+    val imageUrl: String,
+    val layout: String,
     val onPrimary: () -> Unit,
     val onSecondary: () -> Unit
 )
@@ -50,6 +52,8 @@ object InAppTemplates {
                     stringArgument("primaryText", "Continue")
                     stringArgument("secondaryText", "Not now")
                     stringArgument("accent", "#315D3C")
+                    stringArgument("imageUrl", "")        // optional, https only
+                    stringArgument("layout", "card")      // "card" (centered) or "bottom" (bottom sheet)
                     actionArgument("primaryAction")
                 },
                 template {
@@ -60,6 +64,8 @@ object InAppTemplates {
                     stringArgument("primaryText", "Allow")
                     stringArgument("secondaryText", "Not now")
                     stringArgument("accent", "#315D3C")
+                    stringArgument("imageUrl", "")        // optional, https only
+                    stringArgument("layout", "card")      // "card" (centered) or "bottom" (bottom sheet)
                 },
                 // Non-visual functions: pickable as button actions in the dashboard, they just switch tab.
                 function(isVisual = false) {
@@ -96,8 +102,9 @@ private class CardPresenter(private val appContext: Context, private val isPrime
             primaryText = context.getString("primaryText").orEmpty(),
             secondaryText = context.getString("secondaryText").orEmpty(),
             accent = context.getString("accent").orEmpty(),
+            imageUrl = context.getString("imageUrl").orEmpty(),
+            layout = context.getString("layout").orEmpty(),
             onPrimary = {
-                Analytics.inAppButtonClicked(appContext, name, "primary", name)
                 InAppHandler.rememberClick(appContext, name, "primary")
                 if (isPrimer) {
                     CleverTapAPI.getDefaultInstance(appContext)?.promptForPushPermission(false)
@@ -107,13 +114,11 @@ private class CardPresenter(private val appContext: Context, private val isPrime
                 close(context, "primary")
             },
             onSecondary = {
-                Analytics.inAppButtonClicked(appContext, name, "secondary", name)
                 close(context, "secondary")
             }
         )
         InAppOverlay.current = card
         context.setPresented()
-        Analytics.inAppShown(appContext, name, name)
     }
 
     override fun onClose(context: TemplateContext) {

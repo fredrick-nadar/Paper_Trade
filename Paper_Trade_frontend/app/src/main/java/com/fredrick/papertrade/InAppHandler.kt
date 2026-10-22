@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 object InAppNav {
     val request = MutableStateFlow<String?>(null)
 
+    // Optional stock to preselect when the request is open_trade (from a papertrade://trade?symbol=AAPL link).
+    val symbol = MutableStateFlow<String?>(null)
+
     // Button key-value pair "action" -> tab index in MainScreen.
     fun tabFor(action: String): Int? = when (action) {
         "open_stocks" -> 0
@@ -47,7 +50,6 @@ class InAppHandler(context: Context) :
     override fun onShow(ctInAppNotification: CTInAppNotification?) {
         val id = ctInAppNotification?.campaignId.orEmpty()
         prefs.edit().putString("last_campaign", id).apply()
-        Analytics.inAppShown(appContext, id)
     }
 
     override fun onDismissed(extras: MutableMap<String, Any>?, actionExtras: MutableMap<String, Any>?) {
@@ -57,7 +59,6 @@ class InAppHandler(context: Context) :
     override fun onInAppButtonClick(payload: HashMap<String, String>?) {
         val action = payload?.get("action") ?: return
         val campaign = prefs.getString("last_campaign", "").orEmpty()
-        Analytics.inAppButtonClicked(appContext, campaign, action)
         prefs.edit().putLong("last_click_ms", System.currentTimeMillis()).putString("last_action", action).apply()
         InAppNav.request.value = action
     }

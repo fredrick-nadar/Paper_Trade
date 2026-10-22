@@ -1,5 +1,6 @@
 package com.fredrick.papertrade
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,6 +177,8 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
         errorCursorColor = ErrorRed
     )
 
+    LaunchedEffect(isSignup) { Analytics.screenViewed(context, if (isSignup) "Signup" else "Login") }
+
     fun submit() {
         // Validation is immediate for user feedback; the backend validates the same request again.
         if (loading) return
@@ -197,6 +200,7 @@ fun AuthScreen(onAuthenticated: (token: String, user: User) -> Unit) {
                 if (isSignup) Analytics.signedUp(context) else Analytics.loggedIn(context)
             } catch (e: Exception) {
                 error = friendlyError(e)
+                Analytics.authFailed(context, isSignup, error.orEmpty())
             } finally {
                 loading = false
             }
