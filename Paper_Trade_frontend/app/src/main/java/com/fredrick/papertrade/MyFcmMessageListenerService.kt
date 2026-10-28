@@ -58,7 +58,11 @@ class MyFcmMessageListenerService : FirebaseMessagingService() {
     private fun postFallbackNotification(extras: Bundle, title: String, body: String) {
         // Uses a unique ID and carries the original CleverTap extras so multiple pushes and clicks work.
         val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // A campaign that sets Channel ID = trade_alerts gets the custom sound; anything else uses the default channel.
+        val useSound = extras.getString("wzrk_cid") == PaperTradeApplication.SOUND_CHANNEL_ID
+        if (useSound) {
+            PaperTradeApplication.createSoundChannel(applicationContext)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
                 NotificationChannel(
                     channelId,
@@ -81,7 +85,7 @@ class MyFcmMessageListenerService : FirebaseMessagingService() {
         )
         manager.notify(
             notificationId,
-            NotificationCompat.Builder(this, channelId)
+            NotificationCompat.Builder(this, if (useSound) PaperTradeApplication.SOUND_CHANNEL_ID else channelId)
                 .setSmallIcon(com.fredrick.papertrade.R.drawable.ic_launcher_foreground)
                 .setContentTitle(title.ifBlank { getString(R.string.app_name) })
                 .setContentText(body)
