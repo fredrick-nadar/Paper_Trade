@@ -14,6 +14,8 @@ class PaperTradeApplication : Application() {
         if (BuildConfig.DEBUG) CleverTapAPI.setDebugLevel(CleverTapAPI.LogLevel.VERBOSE)
         super.onCreate()
         createSoundChannel(this)
+        // Needs the CleverTap instance, so it must come after super.onCreate(). Also re-arms after a boot/process restart.
+        Geofencing.start(this)
     }
 
     companion object {

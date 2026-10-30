@@ -1,11 +1,13 @@
 package com.fredrick.papertrade
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
@@ -34,6 +36,17 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
     var cleverTapDefaultInstance: CleverTapAPI? = null
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private val inAppHandler by lazy { InAppHandler(this) }
+
+    // Background location (API 29+) can only be requested after foreground location is granted.
+    private val backgroundLocationRequest =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { Geofencing.start(this) }
+    private val fineLocationRequest =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                Geofencing.start(this)
+                requestBackgroundLocation()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // App startup initializes CleverTap/Firebase before Compose starts the login flow.
@@ -69,6 +82,14 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
     private fun handlePushIntent(intent: android.content.Intent?) {
         // Fallback notifications carry the CleverTap bundle here so clicks are attributed to the campaign.
         val pushExtras = intent?.extras ?: return
+        // A tapped action button: dismiss its notification (Android leaves it showing) and record which button.
+        pushExtras.getString(MyFcmMessageListenerService.EXTRA_ACTION_ID)?.let { actionId ->
+            val notificationId = pushExtras.getInt(MyFcmMessageListenerService.EXTRA_NOTIFICATION_ID, -1)
+            if (notificationId != -1) getSystemService(NotificationManager::class.java).cancel(notificationId)
+            Analytics.pushActionClicked(this, pushExtras.getString("wzrk_id").orEmpty(), actionId)
+            // Consume the extra so a rotation or re-delivery of this intent does not repeat it.
+            intent.removeExtra(MyFcmMessageListenerService.EXTRA_ACTION_ID)
+        }
         if (pushExtras.containsKey("wzrk_pn") ||
             pushExtras.containsKey("wzrk_id")
         ) {
@@ -105,6 +126,20 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         }
     }
 
+    private fun requestBackgroundLocation() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) backgroundLocationRequest.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    }
+
+    /** Asked after sign-in so the prompt has context; geofence zones only work once location is granted. */
+    private fun requestLocationForGeofencing() {
+        if (Geofencing.hasLocationPermission(this)) {
+            Geofencing.start(this)
+            requestBackgroundLocation()
+        } else fineLocationRequest.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
     override fun onResume() {
         super.onResume()
         // Receipts may have been read or deleted in the SDK inbox screen.
@@ -129,6 +164,7 @@ class MainActivity : FragmentActivity(), CTPushNotificationListener {
         cleverTapDefaultInstance?.onUserLogin(profileUpdate)
         cleverTapDefaultInstance?.let(Inbox::init)
         registerFcmToken()
+        requestLocationForGeofencing()
 
         firebaseAnalytics.setUserId(user.publicId)
 

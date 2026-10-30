@@ -22,6 +22,9 @@ object Analytics {
     fun inAppDismissed(context: Context, campaignId: String, template: String = "", reason: String = "") =
         track(context, "InApp Dismissed", mapOf("Campaign Id" to campaignId, "Template" to template, "Reason" to reason))
 
+    fun pushActionClicked(context: Context, campaignId: String, actionId: String) =
+        track(context, "Push Action Clicked", mapOf("Campaign Id" to campaignId, "Action Id" to actionId))
+
     fun pushPermissionResponse(context: Context, accepted: Boolean) =
         track(context, "Push Permission Response", mapOf("Accepted" to accepted))
 

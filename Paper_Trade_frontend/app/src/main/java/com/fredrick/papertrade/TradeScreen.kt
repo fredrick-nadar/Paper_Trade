@@ -224,6 +224,7 @@ fun TradeScreen(
             Text(money(total), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextGreen)
         }
         val problem = when {
+            isBuy && Geofencing.isBlocked(stock.symbol) -> "${stock.symbol} can't be bought from your current location"
             isBuy && total > user.balance -> "Insufficient balance"
             !isBuy && qty > own -> if (own == 0) "You don't own any ${stock.symbol}" else "You only own $own"
             else -> null

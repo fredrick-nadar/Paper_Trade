@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -13,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import com.clevertap.android.sdk.CleverTapAPI
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import org.json.JSONArray
 
 class MyFcmMessageListenerService : FirebaseMessagingService() {
 
@@ -83,18 +85,50 @@ class MyFcmMessageListenerService : FirebaseMessagingService() {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        manager.notify(
-            notificationId,
-            NotificationCompat.Builder(this, if (useSound) PaperTradeApplication.SOUND_CHANNEL_ID else channelId)
-                .setSmallIcon(com.fredrick.papertrade.R.drawable.ic_launcher_foreground)
-                .setContentTitle(title.ifBlank { getString(R.string.app_name) })
-                .setContentText(body)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
-        )
+        val builder = NotificationCompat.Builder(this, if (useSound) PaperTradeApplication.SOUND_CHANNEL_ID else channelId)
+            .setSmallIcon(com.fredrick.papertrade.R.drawable.ic_launcher_foreground)
+            .setContentTitle(title.ifBlank { getString(R.string.app_name) })
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+        addActionButtons(builder, extras, notificationId)
+        manager.notify(notificationId, builder.build())
         Log.d("PaperTradePush", "Fallback notification posted")
+    }
+
+    /** Campaign buttons arrive as JSON in "wzrk_acts": [{"l": label, "id": actionId, "dl": deep link}, ...]. */
+    private fun addActionButtons(builder: NotificationCompat.Builder, extras: Bundle, notificationId: Int) {
+        val actions = try {
+            JSONArray(extras.getString("wzrk_acts") ?: return)
+        } catch (e: Exception) {
+            Log.e("PaperTradePush", "Bad wzrk_acts", e)
+            return
+        }
+        for (i in 0 until minOf(actions.length(), MAX_BUTTONS)) {
+            val action = actions.optJSONObject(i) ?: continue
+            val label = action.optString("l")
+            if (label.isBlank()) continue
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtras(extras)
+                // MainActivity routes papertrade:// links through DeepLinks and cancels the notification by id.
+                action.optString("dl").takeIf { it.isNotBlank() }?.let { data = Uri.parse(it) }
+                putExtra(EXTRA_ACTION_ID, action.optString("id"))
+                putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val pending = PendingIntent.getActivity(
+                this, notificationId + i + 1, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(0, label, pending)
+        }
+    }
+
+    companion object {
+        const val EXTRA_ACTION_ID = "pt_action_id"
+        const val EXTRA_NOTIFICATION_ID = "pt_notification_id"
+        private const val MAX_BUTTONS = 3
     }
 }

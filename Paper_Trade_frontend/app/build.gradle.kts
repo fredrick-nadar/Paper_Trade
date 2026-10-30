@@ -71,6 +71,10 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging)
     implementation(libs.clevertap.android.sdk)
+    implementation(libs.clevertap.geofence.sdk)
+    implementation(libs.play.services.location)
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.concurrent.futures)
     implementation(libs.coil.compose)
     implementation(libs.material)
 
